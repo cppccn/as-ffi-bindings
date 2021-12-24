@@ -1,12 +1,12 @@
 [package]
-name = "wasmer-as"
+name = "as-ffi-bindings"
 version = "0.4.1-alpha.0"
 authors = ["Adrien Zinger <zinger.ad@gmail.com>", "Yvan Sraka <yvan@sraka.xyz>", "Aurelia Dolo"]
 edition = "2021"
 license = "Apache-2.0"
-description = "Helpers to read and write memory in AssemblyScript wasm modules executing in wasmer-runtime"
+description = "Helpers to read and write memory in AssemblyScript wasm modules"
 keywords = ["assemblyscript", "assembly-script", "wasm", "wasmer"]
-repository = "https://github.com/adrien-zinger/wasmer-as"
+repository = "https://github.com/cppccn/as-ffi-bindings"
 build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -1,6 +1,6 @@
 use std::error::Error;
 use wasmer::{imports, Function, Instance, Module, Store};
-use wasmer_as::{abort, Env, Read, StringPtr, BufferPtr, Write};
+use as_ffi_bindings::{abort, Env, Read, StringPtr, BufferPtr, Write};
 
 #[test]
 fn read_strings() -> Result<(), Box<dyn Error>> {
