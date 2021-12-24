@@ -1,6 +1,6 @@
 [package]
 name = "as-ffi-bindings"
-version = "0.4.1-alpha.0"
+version = "0.1.0"
 authors = ["Adrien Zinger <zinger.ad@gmail.com>", "Yvan Sraka <yvan@sraka.xyz>", "Aurelia Dolo"]
 edition = "2021"
 license = "Apache-2.0"
