@@ -27,6 +27,10 @@ impl Env {
             fn_collect,
         }
     }
+
+    pub fn init(&mut self, instance: &Instance) -> anyhow::Result<()> {
+        Ok(self.init_with_instance(instance)?)
+    }
 }
 
 impl WasmerEnv for Env {

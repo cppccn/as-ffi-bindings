@@ -46,25 +46,8 @@ fn read_alloc_strings() -> Result<(), Box<dyn Error>> {
     let instance = Instance::new(&module, &import_object)?;
     let memory = instance.exports.get_memory("memory").expect("get memory");
 
-    let env = Env::new(
-        memory.clone(),
-        match instance.exports.get_function("__new") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-        match instance.exports.get_function("__pin") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-        match instance.exports.get_function("__unpin") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-        match instance.exports.get_function("__collect") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-    );
+    let mut env = Env::default();
+    env.init(&instance)?;
 
     let get_string = instance
         .exports
@@ -100,25 +83,8 @@ fn read_write_strings() -> Result<(), Box<dyn Error>> {
     let instance = Instance::new(&module, &import_object)?;
     let memory = instance.exports.get_memory("memory").expect("get memory");
 
-    let env = Env::new(
-        memory.clone(),
-        match instance.exports.get_function("__new") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-        match instance.exports.get_function("__pin") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-        match instance.exports.get_function("__unpin") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-        match instance.exports.get_function("__collect") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-    );
+    let mut env = Env::default();
+    env.init(&instance)?;
 
     let get_string = instance
         .exports
@@ -181,25 +147,8 @@ fn alloc_buffer() -> Result<(), Box<dyn Error>> {
     let instance = Instance::new(&module, &import_object)?;
     let memory = instance.exports.get_memory("memory").expect("get memory");
 
-    let env = Env::new(
-        memory.clone(),
-        match instance.exports.get_function("__new") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-        match instance.exports.get_function("__pin") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-        match instance.exports.get_function("__unpin") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-        match instance.exports.get_function("__collect") {
-            Ok(func) => Some(func.clone()),
-            _ => None,
-        },
-    );
+    let mut env = Env::default();
+    env.init(&instance).unwrap();
 
     let sort_buffer = instance
         .exports
