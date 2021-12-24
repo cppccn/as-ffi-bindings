@@ -141,7 +141,7 @@
 <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Env</span>, <span class="ident">Memory</span>, <span class="ident">Read</span>, <span class="ident">Write</span>};
 
 <span class="kw">use</span> <span class="ident">std::convert</span>::{<span class="ident">TryFrom</span>, <span class="ident">TryInto</span>};
-<span class="kw">use</span> <span class="ident">wasmer</span>::{<span class="ident">Array</span>, <span class="ident">Value</span>, <span class="ident">WasmPtr</span>, <span class="ident">FromToNativeWasmType</span>};
+<span class="kw">use</span> <span class="ident">wasmer</span>::{<span class="ident">Array</span>, <span class="ident">FromToNativeWasmType</span>, <span class="ident">Value</span>, <span class="ident">WasmPtr</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StringPtr</span>(<span class="ident">WasmPtr</span><span class="op">&lt;</span><span class="ident">u16</span>, <span class="ident">Array</span><span class="op">&gt;</span>);
