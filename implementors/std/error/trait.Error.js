@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["wasmer_as"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/std/error/trait.Error.html\" title=\"trait std::error::Error\">Error</a> for <a class=\"enum\" href=\"wasmer_as/enum.Error.html\" title=\"enum wasmer_as::Error\">Error</a>","synthetic":false,"types":["wasmer_as::Error"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

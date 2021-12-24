@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["wasmer_as"] = [{"text":"impl FromToNativeWasmType for <a class=\"struct\" href=\"wasmer_as/struct.StringPtr.html\" title=\"struct wasmer_as::StringPtr\">StringPtr</a>","synthetic":false,"types":["wasmer_as::string_ptr::StringPtr"]},{"text":"impl FromToNativeWasmType for <a class=\"struct\" href=\"wasmer_as/struct.BufferPtr.html\" title=\"struct wasmer_as::BufferPtr\">BufferPtr</a>","synthetic":false,"types":["wasmer_as::buffer_ptr::BufferPtr"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
