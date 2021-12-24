@@ -126,7 +126,7 @@
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BufferPtr</span>(<span class="ident">WasmPtr</span><span class="op">&lt;</span><span class="ident">u8</span>, <span class="ident">Array</span><span class="op">&gt;</span>);
 
 <span class="kw">impl</span> <span class="ident">BufferPtr</span> {
-    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">offset</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">offset</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span>(<span class="ident">WasmPtr::new</span>(<span class="ident">offset</span>))
     }
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">offset</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u32</span> {
