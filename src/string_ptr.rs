@@ -9,10 +9,10 @@ use wasmer::{Array, FromToNativeWasmType, Value, WasmPtr};
 pub struct StringPtr(WasmPtr<u16, Array>);
 
 impl StringPtr {
-    fn new(offset: u32) -> Self {
+    pub fn new(offset: u32) -> Self {
         Self(WasmPtr::new(offset))
     }
-    fn offset(&self) -> u32 {
+    pub fn offset(&self) -> u32 {
         self.0.offset()
     }
 }

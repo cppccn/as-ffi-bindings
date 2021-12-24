@@ -8,7 +8,7 @@ use crate::tools::export_asr;
 pub struct BufferPtr(WasmPtr<u8, Array>);
 
 impl BufferPtr {
-    fn new(offset: u32) -> Self {
+    pub fn new(offset: u32) -> Self {
         Self(WasmPtr::new(offset))
     }
     pub fn offset(&self) -> u32 {
