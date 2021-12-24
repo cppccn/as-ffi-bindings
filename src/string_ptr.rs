@@ -3,7 +3,7 @@ use crate::tools::export_asr;
 use super::{Env, Memory, Read, Write};
 
 use std::convert::{TryFrom, TryInto};
-use wasmer::{Array, Value, WasmPtr, FromToNativeWasmType};
+use wasmer::{Array, FromToNativeWasmType, Value, WasmPtr};
 
 #[derive(Clone, Copy)]
 pub struct StringPtr(WasmPtr<u16, Array>);

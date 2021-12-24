@@ -1,11 +1,11 @@
+mod buffer_ptr;
 mod env;
 mod string_ptr;
-mod buffer_ptr;
 mod tools;
 
+pub use buffer_ptr::BufferPtr;
 pub use env::Env;
 pub use string_ptr::StringPtr;
-pub use buffer_ptr::BufferPtr;
 pub use tools::abort;
 
 use std::fmt;

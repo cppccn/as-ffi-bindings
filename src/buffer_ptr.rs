@@ -1,6 +1,6 @@
 use super::{Env, Memory, Read, Write};
 use std::convert::{TryFrom, TryInto};
-use wasmer::{Array, Value, WasmPtr, FromToNativeWasmType};
+use wasmer::{Array, FromToNativeWasmType, Value, WasmPtr};
 
 use crate::tools::export_asr;
 
