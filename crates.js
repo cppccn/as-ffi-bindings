@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["wasmer_as"];
+window.ALL_CRATES = ["as_ffi_bindings"];
