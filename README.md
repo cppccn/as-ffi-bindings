@@ -1,4 +1,4 @@
-# AssemblyScript bindings
+# AssemblyScript bindings [![cargo version](https://img.shields.io/crates/v/as-ffi-bindings.svg)](https://crates.io/crates/as-ffi-bindings)
 
 Currently, this binding library is compatible with Wasmer, and we are studying on a compatibility with WasmTime. With this helper are able to read, write and use the allocation in your WebAssembly modules compiled from AssemblyScript.
 
