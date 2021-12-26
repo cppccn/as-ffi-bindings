@@ -1,12 +1,10 @@
-
 # AssemblyScript bindings
 
-Currently this binding library is compatible with wasmer and we are studying on a compatibility with wasmtime. With this helper are able to read, write and use the allocation in your webassembly modules compiled from AssemblyScript.
-
+Currently, this binding library is compatible with Wasmer, and we are studying on a compatibility with WasmTime. With this helper are able to read, write and use the allocation in your WebAssembly modules compiled from AssemblyScript.
 
 ### Read
 
-We provide two helpers, StringPtr and BufferPtr. The string correspond to a string in AssemblyScript and the BufferPtr to ArrayBuffer. If you want to read the return of a native function. It's really easy.
+We provide two helpers, `StringPtr` and `BufferPtr`. The string correspond to a string in AssemblyScript and the `BufferPtr` to `ArrayBuffer`. If you want to read the return of a native function, it's really easy:
 
 ```rust
 use as_ffi_bindings::{Read, StringPtr};
@@ -25,7 +23,7 @@ let str_ptr: StringPtr = get_string.call()?;
 let string: String = str_ptr.read(memory)?;
 ```
 
-Note: If you choose to use `as_ffi_bindings::Env` you also have access to the memory when you declare your native function with env (using wasmer) so the memory of the instance is allays disponible.
+Note: If you choose to use `as_ffi_bindings::Env` you also have access to the memory when you declare your native function with env (using Wasmer) so the memory of the instance is always available:
 
 ```rust
 let str_ptr: BufferPtr = get_buffer.call()?;
@@ -40,7 +38,7 @@ let buffer: Vec<u8> = buffer_ptr.read(memory)?;
 use as_ffi_bindings::{Write};
 ```
 
-The `Write` traits allow you to free (indevelopment), write and allocate StringPtr and BufferPtr. This will allow you to send a value to your AssemblyScript module from rust!!
+The `Write` traits allow you to free (in development), write and allocate `StringPtr` and `BufferPtr`. This allows you to send a value to your AssemblyScript module from Rust:
 
 ```rust
 let input: Vec<u8> = vec![0x03, 0x02, 0x00, 0x01];
@@ -51,13 +49,13 @@ sort_buffer.call(buffer_ptr.offset() as i32)?;
 // Sort your buffer in webassembly
 ```
 
-Everything remains accessible in the rust side. You can modfy your variable in the rust side with the `.write()` method and obviously in the webassembly module. So it's better to consider this as an unsafe action, pay attention 🥲.
+Everything remains accessible in the rust side. You can modify your variable in the rust side with the `.write()` method and obviously in the WebAssembly module. So it's better to consider this as an unsafe action, pay attention 🥲.
 
-### Env instanciation
+### Env instantiation
 
-You need to init your environment to allocate and write, it's because you need to use exported function as __new, __pin, accordingly to the beautifull AssemblyScript memory documentation 📚. This is automatically initialised when wasmer call a function in the `ImportObject` with an environment (examples comming soon).
+You need to `init` your environment to allocate and write, it's because you need to use exported function as `__new`, `__pin`, accordingly to the beautiful AssemblyScript memory documentation 📚. This is automatically initialized when Wasmer call a function in the `ImportObject` with an environment (examples coming soon).
 
-But when wasmer isn't behind you, you haveto use your own hands! Look:
+But when Wasmer isn't behind you, you have to use your own hands! Look:
 
 ```rust
 let mut env = Env::default();
@@ -68,23 +66,16 @@ Not hard, right?
 
 ## More usage example
 
-There is more subtil things to initialise, as the `abort` function in the ImportObject. Full examples for using features are in the test_features.rs file and we tried to use simple examples.
+There are more subtle things to initialize, as the `abort` function in the `ImportObject`. Full examples for using features are in the test_features.rs file, and we tried to use simple examples.
 
 ---
 
 #### License
 
-<sup>
-Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
-2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
-</sup>
+<sup>Licensed under either of <a href="LICENSE-APACHE">Apache License, Version 2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.</sup>
 
-<br>
+<sub>Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this crate by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.</sub>
 
-<sub>
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this crate by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
-</sub>
+#### Credits
 
-You can have a look to the 
+<sub>You can have a look at the original @onsails [`wasmer-as`](https://github.com/onsails/wasmer-as) experiment, on which this repository is a fork.</sub>
