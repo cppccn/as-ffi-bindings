@@ -47,22 +47,25 @@ impl Write<Vec<u8>> for BufferPtr {
         let size = i32::try_from(value.len())?;
 
         let offset = u32::try_from(
-            new.call(&[Value::I32(size), Value::I32(0)])
-                .expect("Failed to call __new")
-                .get(0)
-                .unwrap()
-                .i32()
-                .unwrap(),
+            if let Some(value) = new.call(&[Value::I32(size), Value::I32(0)])?.get(0) {
+                match value.i32() {
+                    Some(offset) => offset,
+                    _ => anyhow::bail!("Unable to allocate value"),
+                }
+            } else {
+                anyhow::bail!("Unable to allocate value")
+            },
         )?;
         write_buffer(offset, value, env)?;
         Ok(Box::new(BufferPtr::new(offset)))
     }
 
     fn write(&mut self, value: &Vec<u8>, env: &Env) -> anyhow::Result<Box<Self>> {
-        let prev_size = size(
-            self.offset(),
-            env.memory.get_ref().expect("Failed to load memory"),
-        )?;
+        let memory = match env.memory.get_ref() {
+            Some(mem) => mem,
+            _ => anyhow::bail!("Cannot get memory"),
+        };
+        let prev_size = size(self.offset(), memory)?;
         let new_size = u32::try_from(value.len())?;
         if prev_size == new_size {
             write_buffer(self.offset(), value, env)?;
@@ -70,13 +73,11 @@ impl Write<Vec<u8>> for BufferPtr {
         } else {
             // unpin old ptr
             let unpin = export_asr!(fn_pin, env);
-            unpin
-                .call(&[Value::I32(self.offset().try_into().unwrap())])
-                .expect("Failed to call __unpin");
+            unpin.call(&[Value::I32(self.offset().try_into()?)])?;
 
             // collect
             let collect = export_asr!(fn_collect, env);
-            collect.call(&[]).expect("failed to call __collect");
+            collect.call(&[])?;
 
             // alloc with new size
             BufferPtr::alloc(value, env)
@@ -89,11 +90,10 @@ impl Write<Vec<u8>> for BufferPtr {
 }
 
 fn write_buffer(offset: u32, value: &[u8], env: &Env) -> anyhow::Result<()> {
-    let view = env
-        .memory
-        .get_ref()
-        .expect("Failed to load memory")
-        .view::<u8>();
+    let view = match env.memory.get_ref() {
+        Some(mem) => mem.view::<u8>(),
+        _ => anyhow::bail!("Uninitialized memory"),
+    };
     // We count in 32 so we have to devide by 2
     let from = usize::try_from(offset)? / 2;
     for (bytes, cell) in value.iter().zip(view[from..from + value.len()].iter()) {

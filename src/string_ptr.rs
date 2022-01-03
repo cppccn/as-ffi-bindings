@@ -51,42 +51,43 @@ impl Write<String> for StringPtr {
         let size = i32::try_from(value.len())?;
 
         let offset = u32::try_from(
-            new.call(&[Value::I32(size << 1), Value::I32(1)])
-                .expect("Failed to call __new")
-                .get(0)
-                .unwrap()
-                .i32()
-                .unwrap(),
+            match new.call(&[Value::I32(size << 1), Value::I32(1)])?.get(0) {
+                Some(val) => match val.i32() {
+                    Some(i) => i,
+                    _ => anyhow::bail!("Failed to allocate"),
+                },
+                _ => anyhow::bail!("Failed to allocate"),
+            },
         )?;
         write_str(offset, value, env)?;
 
         // pin
         let pin = export_asr!(fn_pin, env);
-        pin.call(&[Value::I32(offset.try_into().unwrap())])
-            .expect("Failed to call __pin");
+        pin.call(&[Value::I32(offset.try_into()?)])?;
 
         Ok(Box::new(StringPtr::new(offset)))
     }
 
     fn write(&mut self, value: &String, env: &Env) -> anyhow::Result<Box<StringPtr>> {
-        let prev_size = size(
-            self.offset(),
-            env.memory.get_ref().expect("Failed to load memory"),
-        )?;
+        let memory = match env.memory.get_ref() {
+            Some(mem) => mem,
+            _ => anyhow::bail!("Cannot get memory"),
+        };
+        let prev_size = size(self.offset(), memory)?;
         let new_size = u32::try_from(value.len())? << 1;
         if prev_size == new_size {
+            println!("test");
             write_str(self.offset(), value, env)?;
             Ok(Box::new(*self))
         } else {
+            println!("test2");
             // unpin old ptr
             let unpin = export_asr!(fn_pin, env);
-            unpin
-                .call(&[Value::I32(self.offset().try_into().unwrap())])
-                .expect("Failed to call __unpin");
+            unpin.call(&[Value::I32(self.offset().try_into()?)])?;
 
             // collect
             let collect = export_asr!(fn_collect, env);
-            collect.call(&[]).expect("failed to call __collect");
+            collect.call(&[])?;
 
             // alloc with new size
             StringPtr::alloc(value, env)
@@ -96,24 +97,22 @@ impl Write<String> for StringPtr {
     fn free(self, env: &Env) -> anyhow::Result<()> {
         // unpin
         let unpin = export_asr!(fn_pin, env);
-        unpin
-            .call(&[Value::I32(self.offset().try_into().unwrap())])
-            .expect("Failed to call __unpin");
+        unpin.call(&[Value::I32(self.offset().try_into()?)])?;
 
         // collect
         let collect = export_asr!(fn_collect, env);
-        collect.call(&[]).expect("failed to call __collect");
+        collect.call(&[])?;
         Ok(())
     }
 }
 
 fn write_str(offset: u32, value: &str, env: &Env) -> anyhow::Result<()> {
     let utf16 = value.encode_utf16();
-    let view = env
-        .memory
-        .get_ref()
-        .expect("Failed to load memory")
-        .view::<u16>();
+    println!("write {}", offset);
+    let view = match env.memory.get_ref() {
+        Some(mem) => mem.view::<u16>(),
+        _ => anyhow::bail!("Uninitialized memory"),
+    };
     // We count in 32 so we have to devide by 2
     let from = usize::try_from(offset)? / 2;
     for (bytes, cell) in utf16.into_iter().zip(view[from..from + value.len()].iter()) {
