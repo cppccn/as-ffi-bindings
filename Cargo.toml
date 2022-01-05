@@ -3,6 +3,7 @@ name = "as-ffi-bindings"
 version = "0.2.0"
 authors = ["Adrien Zinger <zinger.ad@gmail.com>", "Yvan Sraka <yvan@sraka.xyz>", "Aurelia Dolo"]
 edition = "2021"
+rust-version = "1.56.1"
 license = "Apache-2.0"
 description = "Helpers to read and write memory in AssemblyScript wasm modules"
 keywords = ["assemblyscript", "assembly-script", "wasm", "wasmer"]

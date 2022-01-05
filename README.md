@@ -79,3 +79,5 @@ There are more subtle things to initialize, as the `abort` function in the `Impo
 #### Credits
 
 <sub>You can have a look at the original @onsails [`wasmer-as`](https://github.com/onsails/wasmer-as) experiment, on which this repository is a fork.</sub>
+
+> Minimal Rust version: 1.56.1
