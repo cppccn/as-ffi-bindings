@@ -76,11 +76,9 @@ impl Write<String> for StringPtr {
         let prev_size = size(self.offset(), memory)?;
         let new_size = u32::try_from(value.len())? << 1;
         if prev_size == new_size {
-            println!("test");
             write_str(self.offset(), value, env)?;
             Ok(Box::new(*self))
         } else {
-            println!("test2");
             // unpin old ptr
             let unpin = export_asr!(fn_pin, env);
             unpin.call(&[Value::I32(self.offset().try_into()?)])?;
@@ -108,7 +106,6 @@ impl Write<String> for StringPtr {
 
 fn write_str(offset: u32, value: &str, env: &Env) -> anyhow::Result<()> {
     let utf16 = value.encode_utf16();
-    println!("write {}", offset);
     let view = match env.memory.get_ref() {
         Some(mem) => mem.view::<u16>(),
         _ => anyhow::bail!("Uninitialized memory"),
