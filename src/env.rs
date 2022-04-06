@@ -35,22 +35,21 @@ impl Env {
 
 impl WasmerEnv for Env {
     fn init_with_instance(&mut self, instance: &Instance) -> Result<(), HostEnvInitError> {
-        let mem = instance
+        let mem: Memory = instance
             .exports
-            .get_memory("memory")
-            .map_err(HostEnvInitError::from)?
-            .clone();
-        if let Ok(func) = instance.exports.get_function("__new") {
-            self.fn_new = Some(func.clone())
+            .get_with_generics_weak("memory")
+            .map_err(HostEnvInitError::from)?;
+        if let Ok(func) = instance.exports.get_with_generics_weak("__new") {
+            self.fn_new = Some(func)
         }
-        if let Ok(func) = instance.exports.get_function("__pin") {
-            self.fn_pin = Some(func.clone())
+        if let Ok(func) = instance.exports.get_with_generics_weak("__pin") {
+            self.fn_pin = Some(func)
         }
-        if let Ok(func) = instance.exports.get_function("__unpin") {
-            self.fn_unpin = Some(func.clone())
+        if let Ok(func) = instance.exports.get_with_generics_weak("__unpin") {
+            self.fn_unpin = Some(func)
         }
-        if let Ok(func) = instance.exports.get_function("__collect") {
-            self.fn_collect = Some(func.clone())
+        if let Ok(func) = instance.exports.get_with_generics_weak("__collect") {
+            self.fn_collect = Some(func)
         }
         self.memory.initialize(mem);
         Ok(())
