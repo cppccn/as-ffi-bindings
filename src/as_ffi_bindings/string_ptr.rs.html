@@ -217,7 +217,7 @@
             <span class="prelude-val">Ok</span>(<span class="ident">Box::new</span>(<span class="kw-2">*</span><span class="self">self</span>))
         } <span class="kw">else</span> {
             <span class="comment">// unpin old ptr</span>
-            <span class="kw">let</span> <span class="ident">unpin</span> <span class="op">=</span> <span class="macro">export_asr!</span>(<span class="ident">fn_pin</span>, <span class="ident">env</span>);
+            <span class="kw">let</span> <span class="ident">unpin</span> <span class="op">=</span> <span class="macro">export_asr!</span>(<span class="ident">fn_unpin</span>, <span class="ident">env</span>);
             <span class="ident">unpin</span>.<span class="ident">call</span>(<span class="kw-2">&amp;</span>[<span class="ident">Value::I32</span>(<span class="self">self</span>.<span class="ident">offset</span>().<span class="ident">try_into</span>()<span class="question-mark">?</span>)])<span class="question-mark">?</span>;
 
             <span class="comment">// collect</span>
@@ -231,7 +231,7 @@
 
     <span class="kw">fn</span> <span class="ident">free</span>(<span class="self">self</span>, <span class="ident">env</span>: <span class="kw-2">&amp;</span><span class="ident">Env</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="comment">// unpin</span>
-        <span class="kw">let</span> <span class="ident">unpin</span> <span class="op">=</span> <span class="macro">export_asr!</span>(<span class="ident">fn_pin</span>, <span class="ident">env</span>);
+        <span class="kw">let</span> <span class="ident">unpin</span> <span class="op">=</span> <span class="macro">export_asr!</span>(<span class="ident">fn_unpin</span>, <span class="ident">env</span>);
         <span class="ident">unpin</span>.<span class="ident">call</span>(<span class="kw-2">&amp;</span>[<span class="ident">Value::I32</span>(<span class="self">self</span>.<span class="ident">offset</span>().<span class="ident">try_into</span>()<span class="question-mark">?</span>)])<span class="question-mark">?</span>;
 
         <span class="comment">// collect</span>
@@ -268,5 +268,5 @@
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="as_ffi_bindings" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0-nightly (6af09d250 2022-04-03)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="as_ffi_bindings" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (e7575f967 2022-04-14)" ></div>
 </body></html>
