@@ -1,62 +1,66 @@
-///! The current module give a free access to an helper. With the goal of
-///! providing an helper to read and write basic pointers in a WebAssembly
-///! script builded from the [AssemblyScript compiler](https://www.assemblyscript.org).
-///!
-///! Thanks to wasmer and the [AssemblyScript Runtime](https://www.assemblyscript.org/garbage-collection.html#runtime-interface),
-///! we can provide functions like `alloc`, `read` and `write` to interact with
-///! a given webassembly instance.
-///!
-///! # Helpers
-///!
-///! For the moment this crate implement helpers for the ArrayBuffer and for strings.
-///! Historically the ArrayBuffer is less tested than the string. But the both allow
-///! you to interact with a wasmer instance.
-///!
-///! ```ignore
-///! let wasm_bytes = include_bytes!(concat!(
-///! env!("CARGO_MANIFEST_DIR"),
-///! "/tests/runtime_exported.wat"
-///! ));
-///! let store = Store::default();
-///! let module = Module::new(&store, wasm_bytes)?;
-///!
-///! let import_object = imports! {
-///! "env" => {
-///!     "abort" => Function::new_native_with_env(&store, Env::default(), abort),
-///! },
-///! };
-///!
-///! let instance = Instance::new(&module, &import_object)?;
-///! let memory = instance.exports.get_memory("memory").expect("get memory");
-///!
-///! let mut env = Env::default();
-///! env.init(&instance)?;
-///!
-///! let get_string = instance
-///! .exports
-///! .get_native_function::<(), StringPtr>("getString")?;
-///!
-///! let str_ptr = get_string.call()?;
-///! let string = str_ptr.read(memory)?;
-///!
-///! assert_eq!(string, "hello test");
-///!
-///! let str_ptr_2 = StringPtr::alloc(&"hello return".to_string(), &env)?;
-///! let string = str_ptr_2.read(memory)?;
-///! assert_eq!(string, "hello return");
-///! ```
-///!
-///!
-///!
-///! # Unsafe note
-///! This crate has a low-level access to your memory, it's often dangerous to
-///! share memory between programs and you should consider this in your
-///! project.
+//! The current module give a free access to an helper. With the goal of
+//! providing an helper to read and write basic pointers in a WebAssembly
+//! script builded from the [AssemblyScript compiler](https://www.assemblyscript.org).
+//!
+//! Thanks to wasmer and the [AssemblyScript Runtime](https://www.assemblyscript.org/garbage-collection.html#runtime-interface),
+//! we can provide functions like `alloc`, `read` and `write` to interact with
+//! a given webassembly instance.
+//!
+//! # Helpers
+//!
+//! For the moment this crate implement helpers for the ArrayBuffer and for strings.
+//! Historically the ArrayBuffer is less tested than the string. But the both allow
+//! you to interact with a wasmer instance.
+//!
+//! ```ignore
+//! let wasm_bytes = include_bytes!(concat!(
+//! env!("CARGO_MANIFEST_DIR"),
+//! "/tests/runtime_exported.wat"
+//! ));
+//! let store = Store::default();
+//! let module = Module::new(&store, wasm_bytes)?;
+//!
+//! let import_object = imports! {
+//! "env" => {
+//!     "abort" => Function::new_native_with_env(&store, Env::default(), abort),
+//! },
+//! };
+//!
+//! let instance = Instance::new(&module, &import_object)?;
+//! let memory = instance.exports.get_memory("memory").expect("get memory");
+//!
+//! let mut env = Env::default();
+//! env.init(&instance)?;
+//!
+//! let get_string = instance
+//! .exports
+//! .get_native_function::<(), StringPtr>("getString")?;
+//!
+//! let str_ptr = get_string.call()?;
+//! let string = str_ptr.read(memory)?;
+//!
+//! assert_eq!(string, "hello test");
+//!
+//! let str_ptr_2 = StringPtr::alloc(&"hello return".to_string(), &env)?;
+//! let string = str_ptr_2.read(memory)?;
+//! assert_eq!(string, "hello return");
+//! ```
+//!
+//!
+//!
+//! # Unsafe note
+//! This crate has a low-level access to your memory, it's often dangerous to
+//! share memory between programs and you should consider this in your
+//! project.
+mod any_ptr;
 mod buffer_ptr;
 mod env;
 mod string_ptr;
 mod tools;
 
+pub use any_ptr::AnyPtr;
+pub use any_ptr::AnyPtrExported;
+pub use any_ptr::Type;
 pub use buffer_ptr::BufferPtr;
 pub use env::Env;
 pub use string_ptr::StringPtr;
