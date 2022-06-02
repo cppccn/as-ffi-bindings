@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Error",""]],"fn":[["abort",""]],"struct":[["BufferPtr",""],["Env",""],["StringPtr",""]],"trait":[["Read",""],["Write",""]]});
+initSidebarItems({"enum":[["Error",""],["Type",""]],"fn":[["abort",""]],"struct":[["AnyPtr",""],["AnyPtrExported",""],["BufferPtr",""],["Env",""],["StringPtr",""]],"trait":[["Read",""],["Write",""]]});
