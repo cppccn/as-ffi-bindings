@@ -1,5 +1,5 @@
-use as_ffi_bindings::{abort, BufferPtr, Env, Read, StringPtr, Write};
-use std::error::Error;
+use as_ffi_bindings::{abort, AnyPtr, BufferPtr, Env, Read, StringPtr, Write};
+use std::{error::Error, sync::Mutex};
 use wasmer::{imports, Function, Instance, Module, Store};
 
 #[test]
@@ -161,5 +161,72 @@ fn alloc_buffer() -> Result<(), Box<dyn Error>> {
 
     let expected: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03];
     assert_eq!(sorted, expected);
+    Ok(())
+}
+
+lazy_static::lazy_static! {
+    // static variable containing the printed values in test [read_write_any]
+    static ref ANY_PRINTED: std::sync::Arc<Mutex<Vec<i32>>> = std::sync::Arc::new(Mutex::new(Vec::new()));
+}
+
+#[test]
+fn read_write_any() -> Result<(), Box<dyn Error>> {
+    fn print(val: i32) {
+        ANY_PRINTED.lock().unwrap().push(val);
+    }
+    let wasm_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/my_struct.wasm"));
+    // First get the exported object from a first module instance
+    let exported = {
+        let store = Store::default();
+        let import_object = imports! {
+            "env" => {
+                "abort" => Function::new_native_with_env(&store, Env::default(), abort),
+            },
+            "index" => {
+                "print" => Function::new_native(&store, print),
+            }
+        };
+        let module = Module::new(&store, wasm_bytes)?;
+        let instance = Instance::new(&module, &import_object)?;
+        let memory = instance.exports.get_memory("memory").expect("get memory");
+
+        let mut env = Env::default();
+        env.init(&instance)?;
+
+        let get_struct = instance
+            .exports
+            .get_native_function::<(), AnyPtr>("get_struct")?;
+
+        get_struct.call()?.export(memory)?
+    };
+    {
+        let store = Store::default();
+        let import_object = imports! {
+            "env" => {
+                "abort" => Function::new_native_with_env(&store, Env::default(), abort),
+            },
+            "index" => {
+                "print" => Function::new_native(&store, print),
+            }
+        };
+        let module = Module::new(&store, wasm_bytes)?;
+        let instance = Instance::new(&module, &import_object)?;
+        instance.exports.get_memory("memory").expect("get memory");
+
+        let mut env = Env::default();
+        env.init(&instance)?;
+
+        let print_vals = instance.exports.get_native_function::<i32, ()>("dump")?;
+        let ptr = AnyPtr::import(&exported, &env)?.offset();
+        assert_eq!(
+            exported.id,
+            AnyPtr::new(ptr).export(env.memory.get_ref().unwrap())?.id
+        );
+        print_vals.call(ptr as i32)?;
+    };
+
+    let p = ANY_PRINTED.lock().unwrap();
+    let v = p.clone();
+    assert_eq!(v, vec![12, 13, 12, 13]);
     Ok(())
 }
