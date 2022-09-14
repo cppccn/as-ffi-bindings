@@ -51,6 +51,11 @@ sort_buffer.call(buffer_ptr.offset() as i32)?;
 
 Everything remains accessible in the rust side. You can modify your variable in the rust side with the `.write()` method and obviously in the WebAssembly module. So it's better to consider this as an unsafe action, pay attention 🥲.
 
+#### no_thread feature
+
+The feature 'no_thread' can be enabled to efficiently copy a buffer into a BufferPtr. To avoid data races,
+you should only use 1 thread to deal with the memory of your Wasmer instance.
+
 ### Env instantiation
 
 You need to `init` your environment to allocate and write, it's because you need to use exported function as `__new`, `__pin`, accordingly to the beautiful AssemblyScript memory documentation 📚. This is automatically initialized when Wasmer call a function in the `ImportObject` with an environment (examples coming soon).
