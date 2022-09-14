@@ -94,10 +94,21 @@ fn write_buffer(offset: u32, value: &[u8], env: &Env) -> anyhow::Result<()> {
         Some(mem) => mem.view::<u8>(),
         _ => anyhow::bail!("Uninitialized memory"),
     };
-    let from = usize::try_from(offset)?;
-    for (bytes, cell) in value.iter().zip(view[from..from + value.len()].iter()) {
-        cell.set(*bytes);
+
+    if cfg!(feature = "no_thread") {
+        let subarray_view = view.subarray(offset, offset+(value.len() as u32));
+        // copy_from is unsafe because the caller will need to make sure there are no data races
+        // when copying memory into the view.
+        unsafe {
+            subarray_view.copy_from(value);
+        }
+    } else {
+        let from = usize::try_from(offset)?;
+        for (bytes, cell) in value.iter().zip(view[from..from + value.len()].iter()) {
+            cell.set(*bytes);
+        }
     }
+
     Ok(())
 }
 
