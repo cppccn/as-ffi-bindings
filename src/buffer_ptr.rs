@@ -94,8 +94,7 @@ fn write_buffer(offset: u32, value: &[u8], env: &Env) -> anyhow::Result<()> {
         Some(mem) => mem.view::<u8>(),
         _ => anyhow::bail!("Uninitialized memory"),
     };
-    // We count in 32 so we have to devide by 2
-    let from = usize::try_from(offset)? / 2;
+    let from = usize::try_from(offset)?;
     for (bytes, cell) in value.iter().zip(view[from..from + value.len()].iter()) {
         cell.set(*bytes);
     }

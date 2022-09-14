@@ -110,7 +110,7 @@ fn write_str(offset: u32, value: &str, env: &Env) -> anyhow::Result<()> {
         Some(mem) => mem.view::<u16>(),
         _ => anyhow::bail!("Uninitialized memory"),
     };
-    // We count in 32 so we have to devide by 2
+    // We count in 32 so we have to divide by 2
     let from = usize::try_from(offset)? / 2;
     for (bytes, cell) in utf16.into_iter().zip(view[from..from + value.len()].iter()) {
         cell.set(bytes);
