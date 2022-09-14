@@ -1,6 +1,6 @@
 [package]
 name = "as-ffi-bindings"
-version = "0.2.1"
+version = "0.2.5"
 authors = ["Adrien Zinger <zinger.ad@gmail.com>", "Yvan Sraka <yvan@sraka.xyz>", "Aurelia Dolo"]
 edition = "2021"
 rust-version = "1.56.1"
@@ -13,5 +13,8 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wasmer = "2.2.1"
+wasmer = "2.3.0"
 anyhow = "1"
+
+[dev-dependencies]
+lazy_static = "1"
