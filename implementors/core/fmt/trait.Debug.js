@@ -1,3 +1,3 @@
-(function() {var implementors = {};
-implementors["as_ffi_bindings"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html\" title=\"trait core::fmt::Debug\">Debug</a> for <a class=\"enum\" href=\"as_ffi_bindings/enum.Error.html\" title=\"enum as_ffi_bindings::Error\">Error</a>","synthetic":false,"types":["as_ffi_bindings::Error"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
+(function() {var implementors = {
+"as_ffi_bindings":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html\" title=\"trait core::fmt::Debug\">Debug</a> for <a class=\"enum\" href=\"as_ffi_bindings/enum.Error.html\" title=\"enum as_ffi_bindings::Error\">Error</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
