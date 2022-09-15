@@ -96,7 +96,7 @@ fn write_buffer(offset: u32, value: &[u8], env: &Env) -> anyhow::Result<()> {
     };
 
     if cfg!(feature = "no_thread") {
-        let subarray_view = view.subarray(offset, offset+(value.len() as u32));
+        let subarray_view = view.subarray(offset, offset + (value.len() as u32));
         // copy_from is unsafe because the caller will need to make sure there are no data races
         // when copying memory into the view.
         unsafe {
