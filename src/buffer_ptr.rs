@@ -1,6 +1,6 @@
 use super::{Env, Memory, Read, Write};
 use std::convert::{TryFrom, TryInto};
-use wasmer::{Array, FromToNativeWasmType, Value, WasmPtr};
+use wasmer::{Array, FromToNativeWasmType, Value, WasmCell, WasmPtr};
 
 use crate::tools::export_asr;
 
@@ -29,8 +29,8 @@ unsafe impl FromToNativeWasmType for BufferPtr {
 impl Read<Vec<u8>> for BufferPtr {
     fn read(&self, memory: &Memory) -> anyhow::Result<Vec<u8>> {
         let size = self.size(memory)?;
-        if let Some(buf) = self.0.deref(memory, 0, size * 2) {
-            Ok(buf.iter().map(|b| b.get()).collect())
+        if let Some(buf) = self.0.deref(memory, 0, size) {
+            Ok(buf.iter().map(WasmCell::get).collect())
         } else {
             anyhow::bail!("Wrong offset: can't read buf")
         }
@@ -117,9 +117,9 @@ fn size(offset: u32, memory: &Memory) -> anyhow::Result<u32> {
         anyhow::bail!("Wrong offset: less than 2")
     }
     // read -4 offset
-    // https://www.assemblyscript.org/memory.html#internals
+    // https://www.assemblyscript.org/runtime.html#memory-layout
     if let Some(cell) = memory.view::<u32>().get(offset as usize / (32 / 8) - 1) {
-        Ok(cell.get() / 2)
+        Ok(cell.get())
     } else {
         anyhow::bail!("Wrong offset: can't read size")
     }
