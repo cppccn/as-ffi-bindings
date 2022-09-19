@@ -154,12 +154,13 @@ fn alloc_buffer() -> Result<(), Box<dyn Error>> {
         .exports
         .get_native_function::<i32, ()>("sortBuffer")?;
 
-    let input: Vec<u8> = vec![0x03, 0x02, 0x00, 0x01];
+    let input: Vec<u8> = vec![0x03, 0x02, 0x08, 0x00, 0x04, 0x01, 0x05];
     let buffer_ptr = BufferPtr::alloc(&input, &env)?;
     sort_buffer.call(buffer_ptr.offset() as i32)?;
     let sorted = buffer_ptr.read(memory)?;
 
-    let expected: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03];
+    let expected: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x08];
+
     assert_eq!(sorted, expected);
 
     // Now checking with odd size
