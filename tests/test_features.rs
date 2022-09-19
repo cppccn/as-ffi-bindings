@@ -161,6 +161,12 @@ fn alloc_buffer() -> Result<(), Box<dyn Error>> {
 
     let expected: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03];
     assert_eq!(sorted, expected);
+
+    // Now checking with odd size
+    let input: Vec<u8> = vec![0x03, 0x02, 0x00, 0x01, 0x09];
+    let buffer_ptr = BufferPtr::alloc(&input, &env)?;
+    assert_eq!(buffer_ptr.size(memory)?, 5);
+
     Ok(())
 }
 
