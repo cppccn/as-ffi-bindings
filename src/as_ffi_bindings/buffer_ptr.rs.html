@@ -126,7 +126,7 @@
 <span id="126">126</span>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{Env, Memory, Read, Write};
 <span class="kw">use </span>std::convert::{TryFrom, TryInto};
-<span class="kw">use </span>wasmer::{Array, FromToNativeWasmType, Value, WasmPtr};
+<span class="kw">use </span>wasmer::{Array, FromToNativeWasmType, Value, WasmCell, WasmPtr};
 
 <span class="kw">use </span><span class="kw">crate</span>::tools::export_asr;
 
@@ -155,8 +155,8 @@
 <span class="kw">impl </span>Read&lt;Vec&lt;u8&gt;&gt; <span class="kw">for </span>BufferPtr {
     <span class="kw">fn </span>read(<span class="kw-2">&amp;</span><span class="self">self</span>, memory: <span class="kw-2">&amp;</span>Memory) -&gt; anyhow::Result&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>size = <span class="self">self</span>.size(memory)<span class="question-mark">?</span>;
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(buf) = <span class="self">self</span>.<span class="number">0</span>.deref(memory, <span class="number">0</span>, size * <span class="number">2</span>) {
-            <span class="prelude-val">Ok</span>(buf.iter().map(|b| b.get()).collect())
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(buf) = <span class="self">self</span>.<span class="number">0</span>.deref(memory, <span class="number">0</span>, size) {
+            <span class="prelude-val">Ok</span>(buf.iter().map(WasmCell::get).collect())
         } <span class="kw">else </span>{
             <span class="macro">anyhow::bail!</span>(<span class="string">&quot;Wrong offset: can&#39;t read buf&quot;</span>)
         }
@@ -243,12 +243,12 @@
         <span class="macro">anyhow::bail!</span>(<span class="string">&quot;Wrong offset: less than 2&quot;</span>)
     }
     <span class="comment">// read -4 offset
-    // https://www.assemblyscript.org/memory.html#internals
+    // https://www.assemblyscript.org/runtime.html#memory-layout
     </span><span class="kw">if let </span><span class="prelude-val">Some</span>(cell) = memory.view::&lt;u32&gt;().get(offset <span class="kw">as </span>usize / (<span class="number">32 </span>/ <span class="number">8</span>) - <span class="number">1</span>) {
-        <span class="prelude-val">Ok</span>(cell.get() / <span class="number">2</span>)
+        <span class="prelude-val">Ok</span>(cell.get())
     } <span class="kw">else </span>{
         <span class="macro">anyhow::bail!</span>(<span class="string">&quot;Wrong offset: can&#39;t read size&quot;</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="as_ffi_bindings" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0-nightly (750bd1a7f 2022-09-14)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="as_ffi_bindings" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (432abd86f 2022-09-20)" ></div></body></html>
