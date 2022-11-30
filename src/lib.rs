@@ -52,22 +52,22 @@
 //! This crate has a low-level access to your memory, it's often dangerous to
 //! share memory between programs and you should consider this in your
 //! project.
-mod any_ptr;
+// mod any_ptr;
 mod buffer_ptr;
 mod env;
 mod string_ptr;
 mod tools;
 
-pub use any_ptr::AnyPtr;
-pub use any_ptr::AnyPtrExported;
-pub use any_ptr::Type;
+//pub use any_ptr::AnyPtr;
+//pub use any_ptr::AnyPtrExported;
+//pub use any_ptr::Type;
 pub use buffer_ptr::BufferPtr;
-pub use env::Env;
+pub use env::{Env, Env0};
 pub use string_ptr::StringPtr;
 pub use tools::abort;
 
 use std::fmt;
-use wasmer::Memory;
+use wasmer::{Memory, Store};
 
 pub trait Read<T> {
     /// Read the value contained in the given memory at the current pointer
@@ -87,7 +87,7 @@ pub trait Read<T> {
     /// let str_ptr = get_string.call()?;
     /// let string = str_ptr.read(memory)?;
     /// ```
-    fn read(&self, memory: &Memory) -> anyhow::Result<T>;
+    fn read(&self, memory: &Memory, store: &Store) -> anyhow::Result<T>;
     /// Read the size as indicated in the [AssemblyScript object header](https://www.assemblyscript.org/memory.html#internals)
     ///
     /// # Return
@@ -104,7 +104,7 @@ pub trait Read<T> {
     /// let str_ptr = get_string.call()?;
     /// let size: u32 = str_ptr.size(memory)?;
     /// ```
-    fn size(&self, memory: &Memory) -> anyhow::Result<u32>;
+    fn size(&self, memory: &Memory, store: &Store) -> anyhow::Result<u32>;
 }
 
 pub trait Write<T> {
@@ -124,7 +124,8 @@ pub trait Write<T> {
     /// env.init(&instance)?;
     /// let str_ptr = StringPtr::alloc(&"hello return".to_string(), &env)?;
     /// ```
-    fn alloc(value: &T, env: &Env) -> anyhow::Result<Box<Self>>;
+    fn alloc(value: &T, env: &Env, memory: &Memory, store: &mut Store)
+        -> anyhow::Result<Box<Self>>;
     /// Try to write in the given environment a value. If the size is
     /// different, we procede to free the previous string and realloc a new
     /// pointer.
@@ -144,9 +145,15 @@ pub trait Write<T> {
     /// env.init(&instance)?;
     /// let string = str_ptr.write(&"hello return".to_string(), &env)?;
     /// ```
-    fn write(&mut self, value: &T, env: &Env) -> anyhow::Result<Box<Self>>;
+    fn write(
+        &mut self,
+        value: &T,
+        env: &Env,
+        memory: &Memory,
+        store: &mut Store,
+    ) -> anyhow::Result<Box<Self>>;
     /// Unpin the pointer
-    fn free(self, env: &Env) -> anyhow::Result<()>;
+    fn free(self, env: &Env, store: &mut Store) -> anyhow::Result<()>;
 }
 
 #[derive(Debug)]

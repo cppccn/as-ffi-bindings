@@ -1,13 +1,13 @@
 use super::{Env, Memory, Read, Write};
 use crate::{BufferPtr, StringPtr};
 use std::convert::{TryFrom, TryInto};
-use wasmer::{Array, FromToNativeWasmType, Value, WasmPtr};
+use wasmer::{FromToNativeWasmType, Value, WasmPtr};
 
 use crate::tools::export_asr;
 
 // todo: should I implement Any ?
 #[derive(Clone, Copy)]
-pub struct AnyPtr(WasmPtr<u8, Array>);
+pub struct AnyPtr(WasmPtr<u8>);
 pub struct AnyPtrExported {
     pub id: u32,
     pub content: Vec<u8>,
