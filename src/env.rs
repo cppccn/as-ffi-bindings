@@ -1,4 +1,4 @@
-use wasmer::{Function, Instance, Memory, Store, TypedFunction};
+use wasmer::{Memory, TypedFunction};
 
 #[derive(Clone, Default)]
 pub struct Env {

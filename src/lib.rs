@@ -52,15 +52,15 @@
 //! This crate has a low-level access to your memory, it's often dangerous to
 //! share memory between programs and you should consider this in your
 //! project.
-// mod any_ptr;
+mod any_ptr;
 mod buffer_ptr;
 mod env;
 mod string_ptr;
 mod tools;
 
-//pub use any_ptr::AnyPtr;
-//pub use any_ptr::AnyPtrExported;
-//pub use any_ptr::Type;
+pub use any_ptr::AnyPtr;
+pub use any_ptr::AnyPtrExported;
+pub use any_ptr::Type;
 pub use buffer_ptr::BufferPtr;
 pub use env::Env;
 pub use string_ptr::StringPtr;

@@ -1,8 +1,7 @@
-use as_ffi_bindings::{abort, BufferPtr, Env, Read, StringPtr, Write};
+use as_ffi_bindings::{abort, AnyPtr, BufferPtr, Env, Read, StringPtr, Write};
 use std::{error::Error, sync::Mutex};
 use wasmer::{
-    imports, Exports, Extern, Function, FunctionEnv, FunctionType, Imports, Instance, Memory,
-    MemoryType, Module, Pages, Store, Type, Value, WasmPtr,
+    imports, Exports, Function, FunctionEnv, FunctionType, Imports, Instance, Module, Store, Type,
 };
 
 #[test]
@@ -72,7 +71,7 @@ fn read_alloc_strings() -> Result<(), Box<dyn Error>> {
     };
 
     let instance = Instance::new(&mut store, &module, &import_object)?;
-    let memory = instance.exports.get_memory("memory").expect("get memory");
+    // let memory = instance.exports.get_memory("memory").expect("get memory");
 
     let mut env = Env::default();
     let memory = instance.exports.get_memory("memory")?;
@@ -130,7 +129,7 @@ fn read_write_strings() -> Result<(), Box<dyn Error>> {
     };
 
     let instance = Instance::new(&mut store, &module, &import_object)?;
-    let memory = instance.exports.get_memory("memory").expect("get memory");
+    // let memory = instance.exports.get_memory("memory").expect("get memory");
 
     let mut env = Env::default();
     let memory = instance.exports.get_memory("memory")?;
@@ -223,7 +222,7 @@ fn alloc_buffer() -> Result<(), Box<dyn Error>> {
     };
 
     let instance = Instance::new(&mut store, &module, &import_object)?;
-    let memory = instance.exports.get_memory("memory").expect("get memory");
+    // let memory = instance.exports.get_memory("memory").expect("get memory");
 
     let mut env = Env::default();
     let memory = instance.exports.get_memory("memory")?;
@@ -263,10 +262,10 @@ fn test_abort() -> Result<(), Box<dyn Error>> {
     let mut store = Store::default();
     let module = Module::new(&store, wasm_bytes)?;
 
-    let host_function_signature =
-        FunctionType::new(vec![Type::I32, Type::I32, Type::I32, Type::I32], vec![]);
+    // let host_function_signature =
+    //     FunctionType::new(vec![Type::I32, Type::I32, Type::I32, Type::I32], vec![]);
 
-    let mut env = Env::default();
+    let env = Env::default();
     let fenv = FunctionEnv::new(&mut store, env);
 
     let mut exports = Exports::new();
@@ -282,7 +281,6 @@ fn test_abort() -> Result<(), Box<dyn Error>> {
 
     // update FunctionEnv (so we can access memory in host function)
     let memory = instance.exports.get_memory("memory")?;
-    // fenv.as_mut(&mut store).memory = Some(memory.clone());
     let fn_new = instance
         .exports
         .get_typed_function::<(i32, i32), i32>(&store, "__new")?;
@@ -324,66 +322,123 @@ lazy_static::lazy_static! {
     // static variable containing the printed values in test [read_write_any]
     static ref ANY_PRINTED: std::sync::Arc<Mutex<Vec<i32>>> = std::sync::Arc::new(Mutex::new(Vec::new()));
 }
-/*
+
 #[test]
 fn read_write_any() -> Result<(), Box<dyn Error>> {
     fn print(val: i32) {
         ANY_PRINTED.lock().unwrap().push(val);
     }
     let wasm_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/my_struct.wasm"));
+
     // First get the exported object from a first module instance
     let exported = {
-        let store = Store::default();
+        let mut store = Store::default();
+        let dummy_abort_function_signature =
+            FunctionType::new(vec![Type::I32, Type::I32, Type::I32, Type::I32], vec![]);
+        let dummy_abort_host_function =
+            Function::new(&mut store, &dummy_abort_function_signature, |_args| {
+                eprintln!("Dummy abort");
+                Ok(vec![])
+            });
+
         let import_object = imports! {
             "env" => {
-                "abort" => Function::new_native_with_env(&store, Env::default(), abort),
+                "abort" => dummy_abort_host_function,
             },
             "index" => {
-                "print" => Function::new_native(&store, print),
+                "print" => Function::new_typed(&mut store, print),
             }
         };
         let module = Module::new(&store, wasm_bytes)?;
-        let instance = Instance::new(&module, &import_object)?;
-        let memory = instance.exports.get_memory("memory").expect("get memory");
+        let instance = Instance::new(&mut store, &module, &import_object)?;
+        // let memory = instance.exports.get_memory("memory").expect("get memory");
 
         let mut env = Env::default();
-        env.init(&instance)?;
+        let memory = instance.exports.get_memory("memory")?;
+        let fn_new = instance
+            .exports
+            .get_typed_function::<(i32, i32), i32>(&store, "__new")?;
+        let fn_pin = instance
+            .exports
+            .get_typed_function::<i32, i32>(&store, "__pin")?;
+        let fn_unpin = instance
+            .exports
+            .get_typed_function::<i32, ()>(&store, "__unpin")?;
+        let fn_collect = instance
+            .exports
+            .get_typed_function::<(), ()>(&store, "__collect")?;
+
+        env.init_with(
+            Some(memory.clone()),
+            Some(fn_new),
+            Some(fn_pin),
+            Some(fn_unpin),
+            Some(fn_collect),
+        );
 
         let get_struct = instance
             .exports
-            .get_native_function::<(), AnyPtr>("get_struct")?;
+            .get_typed_function::<(), AnyPtr>(&store, "get_struct")?;
 
-        get_struct.call()?.export(memory)?
+        get_struct.call(&mut store)?.export(memory, &store)?
     };
+
     {
-        let store = Store::default();
+        let mut store = Store::default();
+        let dummy_abort_function_signature =
+            FunctionType::new(vec![Type::I32, Type::I32, Type::I32, Type::I32], vec![]);
+        let dummy_abort_host_function =
+            Function::new(&mut store, &dummy_abort_function_signature, |_args| {
+                eprintln!("Dummy abort");
+                Ok(vec![])
+            });
+
         let import_object = imports! {
             "env" => {
-                "abort" => Function::new_native_with_env(&store, Env::default(), abort),
+                "abort" => dummy_abort_host_function,
             },
             "index" => {
-                "print" => Function::new_native(&store, print),
+                "print" => Function::new_typed(&mut store, print),
             }
         };
         let module = Module::new(&store, wasm_bytes)?;
-        let instance = Instance::new(&module, &import_object)?;
-        instance.exports.get_memory("memory").expect("get memory");
+        let instance = Instance::new(&mut store, &module, &import_object)?;
+        // instance.exports.get_memory("memory").expect("get memory");
 
         let mut env = Env::default();
-        env.init(&instance)?;
+        let memory = instance.exports.get_memory("memory")?;
+        let fn_new = instance
+            .exports
+            .get_typed_function::<(i32, i32), i32>(&store, "__new")?;
+        let fn_pin = instance
+            .exports
+            .get_typed_function::<i32, i32>(&store, "__pin")?;
+        let fn_unpin = instance
+            .exports
+            .get_typed_function::<i32, ()>(&store, "__unpin")?;
+        let fn_collect = instance
+            .exports
+            .get_typed_function::<(), ()>(&store, "__collect")?;
 
-        let print_vals = instance.exports.get_native_function::<i32, ()>("dump")?;
-        let ptr = AnyPtr::import(&exported, &env)?.offset();
-        assert_eq!(
-            exported.id,
-            AnyPtr::new(ptr).export(env.memory.get_ref().unwrap())?.id
+        env.init_with(
+            Some(memory.clone()),
+            Some(fn_new),
+            Some(fn_pin),
+            Some(fn_unpin),
+            Some(fn_collect),
         );
-        print_vals.call(ptr as i32)?;
+
+        let print_vals = instance
+            .exports
+            .get_typed_function::<i32, ()>(&store, "dump")?;
+        let ptr = AnyPtr::import(&exported, &env, &memory, &mut store)?.offset();
+        assert_eq!(exported.id, AnyPtr::new(ptr).export(memory, &store)?.id);
+        print_vals.call(&mut store, ptr as i32)?;
     };
 
     let p = ANY_PRINTED.lock().unwrap();
     let v = p.clone();
     assert_eq!(v, vec![12, 13, 12, 13]);
+
     Ok(())
 }
-*/

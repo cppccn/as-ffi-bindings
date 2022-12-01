@@ -1,6 +1,6 @@
 use super::{Env, Memory, Read, Write};
 use std::convert::{TryFrom, TryInto};
-use wasmer::{AsStoreRef, FromToNativeWasmType, Store, Value, WasmPtr};
+use wasmer::{AsStoreRef, FromToNativeWasmType, Store, WasmPtr};
 
 use crate::tools::export_asr;
 
@@ -84,10 +84,10 @@ impl Write<Vec<u8>> for BufferPtr {
 
     fn write(
         &mut self,
-        value: &Vec<u8>,
-        env: &Env,
-        memory: &Memory,
-        store: &mut Store,
+        _value: &Vec<u8>,
+        _env: &Env,
+        _memory: &Memory,
+        _store: &mut Store,
     ) -> anyhow::Result<Box<Self>> {
         todo!()
         /*
@@ -124,7 +124,7 @@ impl Write<Vec<u8>> for BufferPtr {
 fn write_buffer(
     offset: u32,
     value: &[u8],
-    env: &Env,
+    _env: &Env,
     memory: &Memory,
     store: &mut Store,
 ) -> anyhow::Result<()> {

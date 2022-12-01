@@ -3,7 +3,7 @@ use crate::tools::export_asr;
 use super::{Env, Memory, Read, Write};
 
 use std::convert::{TryFrom, TryInto};
-use wasmer::{AsStoreRef, FromToNativeWasmType, Store, Value, WasmPtr};
+use wasmer::{AsStoreRef, FromToNativeWasmType, Store, WasmPtr};
 
 #[derive(Clone, Copy)]
 pub struct StringPtr(WasmPtr<u16>);
@@ -127,7 +127,7 @@ impl Write<String> for StringPtr {
         }
     }
 
-    fn free(self, env: &Env, store: &mut Store) -> anyhow::Result<()> {
+    fn free(self, _env: &Env, _store: &mut Store) -> anyhow::Result<()> {
         todo!()
         // unpin
         /*
@@ -145,7 +145,7 @@ impl Write<String> for StringPtr {
 fn write_str(
     offset: u32,
     value: &str,
-    env: &Env,
+    _env: &Env,
     memory: &Memory,
     store: &mut Store,
 ) -> anyhow::Result<()> {
@@ -165,30 +165,6 @@ fn write_str(
     mem_view.write(from, &value_encoded[..])?;
 
     Ok(())
-}
-
-fn size0(offset: u32, memory: &Memory, store: &Store) -> anyhow::Result<u32> {
-    if offset < 4 {
-        anyhow::bail!("Wrong offset: less than 2")
-    }
-    // read -4 offset
-    // https://www.assemblyscript.org/memory.html#internals
-    /*
-    if let Some(cell) = memory.view::<u32>().get(offset as usize / (32 / 8) - 1) {
-        Ok(cell.get())
-    } else {
-        anyhow::bail!("Wrong offset: can't read size")
-    }
-    */
-
-    /*
-    let mut size_ = Vec::with_capacity(4);
-    memory
-        .view(store)
-        .read(offset as u64 / (32 / 8) - 1, &mut size_[..])?;
-    Ok(u32::from_ne_bytes(size_.try_into().unwrap()))
-    */
-    todo!()
 }
 
 fn size(string_ptr: &StringPtr, memory: &Memory, store: &Store) -> anyhow::Result<u32> {

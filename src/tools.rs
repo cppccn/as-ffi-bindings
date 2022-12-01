@@ -1,9 +1,9 @@
 use super::{Env, Read, StringPtr};
-use wasmer::{FunctionEnvMut, Store};
+use wasmer::FunctionEnvMut;
 
 // if get_string throws an exception abort for some reason is being called
 pub fn abort(
-    mut ctx: FunctionEnvMut<Env>,
+    ctx: FunctionEnvMut<Env>,
     message: StringPtr,
     filename: StringPtr,
     line: u32,

@@ -1,7 +1,8 @@
 use super::{Env, Memory, Read, Write};
 use crate::{BufferPtr, StringPtr};
 use std::convert::{TryFrom, TryInto};
-use wasmer::{FromToNativeWasmType, Value, WasmPtr};
+use std::mem;
+use wasmer::{AsStoreRef, FromToNativeWasmType, Store, WasmPtr};
 
 use crate::tools::export_asr;
 
@@ -50,8 +51,8 @@ impl AnyPtr {
     pub fn new(offset: u32) -> Self {
         Self(WasmPtr::new(offset))
     }
-    pub fn to_type(self, memory: &Memory) -> anyhow::Result<Type> {
-        let t = ptr_id(self.offset(), memory)?;
+    pub fn to_type(self, memory: &Memory, store: &Store) -> anyhow::Result<Type> {
+        let t = ptr_id(&self, memory, store)?;
         if t == 0 {
             Ok(Type::Buffer(Box::new(BufferPtr::new(self.offset()))))
         } else if t == 1 {
@@ -64,16 +65,26 @@ impl AnyPtr {
     pub fn offset(&self) -> u32 {
         self.0.offset()
     }
-    pub fn export(&self, memory: &Memory) -> anyhow::Result<AnyPtrExported> {
-        let content = self.read(memory)?;
-        let id = ptr_id(self.offset(), memory)?;
+    pub fn export(&self, memory: &Memory, store: &Store) -> anyhow::Result<AnyPtrExported> {
+        let content = self.read(memory, store)?;
+        let id = ptr_id(&self, memory, store)?;
         Ok(AnyPtrExported { content, id })
     }
     /// Create a new pointer with an allocation and write the pointer that
     /// has been writen. Return a pointer type.
-    pub fn import(ptr_exported: &AnyPtrExported, env: &Env) -> anyhow::Result<Type> {
+    pub fn import(
+        ptr_exported: &AnyPtrExported,
+        env: &Env,
+        memory: &Memory,
+        store: &mut Store,
+    ) -> anyhow::Result<Type> {
         if ptr_exported.id == 0 {
-            Ok(Type::Buffer(BufferPtr::alloc(&ptr_exported.content, env)?))
+            Ok(Type::Buffer(BufferPtr::alloc(
+                &ptr_exported.content,
+                env,
+                memory,
+                store,
+            )?))
         } else if ptr_exported.id == 1 {
             let utf16_vec = unsafe {
                 let len = ptr_exported.content.len();
@@ -87,11 +98,13 @@ impl AnyPtr {
             Ok(Type::String(StringPtr::alloc(
                 &String::from_utf16_lossy(&utf16_vec),
                 env,
+                memory,
+                store,
             )?))
         } else {
             // todo write type anyway
-            let ptr = AnyPtr::alloc(&ptr_exported.content, env)?;
-            set_id(ptr.offset(), ptr_exported.id, env)?;
+            let ptr = AnyPtr::alloc(&ptr_exported.content, env, memory, store)?;
+            set_id(ptr.offset(), ptr_exported.id, env, memory, store)?;
             Ok(Type::Any(ptr))
         }
     }
@@ -108,39 +121,55 @@ unsafe impl FromToNativeWasmType for AnyPtr {
 }
 
 impl Read<Vec<u8>> for AnyPtr {
-    fn read(&self, memory: &Memory) -> anyhow::Result<Vec<u8>> {
-        let size = self.size(memory)?;
-        if let Some(buf) = self.0.deref(memory, 0, size * 2) {
-            Ok(buf.iter().map(|b| b.get()).collect())
+    fn read(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<Vec<u8>> {
+        let size = self.size(memory, store)?;
+
+        let memory_view = memory.view(store);
+        let wasm_slice_ = self.0.slice(&memory_view, size);
+
+        if let Ok(wasm_slice) = wasm_slice_ {
+            let mut res = Vec::with_capacity(size as usize * 2);
+            res.resize(size as usize, 0);
+            wasm_slice.read_slice(&mut res)?;
+            Ok(res)
         } else {
-            anyhow::bail!("Wrong offset: can't read any object")
+            anyhow::bail!("Wrong offset: can't read buf")
         }
     }
 
-    fn size(&self, memory: &Memory) -> anyhow::Result<u32> {
-        size(self.0.offset(), memory)
+    fn size(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
+        let memory_view = memory.view(&store);
+        let ptr = self.0.sub_offset(4)?;
+        let slice_len_buf = ptr.slice(&memory_view, 4)?.read_to_vec()?;
+        Ok(u32::from_ne_bytes(slice_len_buf.try_into().map_err(
+            |v| anyhow::Error::msg(format!("Unable to convert vec: {:?} to &[u8; 4]", v)),
+        )?))
     }
 }
 
 impl Write<Vec<u8>> for AnyPtr {
-    fn alloc(value: &Vec<u8>, env: &Env) -> anyhow::Result<Box<AnyPtr>> {
+    fn alloc(
+        value: &Vec<u8>,
+        env: &Env,
+        memory: &Memory,
+        store: &mut Store,
+    ) -> anyhow::Result<Box<AnyPtr>> {
         let new = export_asr!(fn_new, env);
         let size = i32::try_from(value.len())?;
-        let offset = u32::try_from(
-            if let Some(value) = new.call(&[Value::I32(size), Value::I32(0)])?.get(0) {
-                match value.i32() {
-                    Some(offset) => offset,
-                    _ => anyhow::bail!("Unable to allocate value"),
-                }
-            } else {
-                anyhow::bail!("Unable to allocate value")
-            },
-        )?;
-        write_buffer(offset, value, env)?;
+        let offset = u32::try_from(new.call(store, size, 0)?)?;
+        write_buffer(offset, value, env, memory, store)?;
         Ok(Box::new(AnyPtr::new(offset)))
     }
 
-    fn write(&mut self, value: &Vec<u8>, env: &Env) -> anyhow::Result<Box<Self>> {
+    fn write(
+        &mut self,
+        _value: &Vec<u8>,
+        _env: &Env,
+        _memory: &Memory,
+        _store: &mut Store,
+    ) -> anyhow::Result<Box<Self>> {
+        todo!()
+        /*
         let memory = match env.memory.get_ref() {
             Some(mem) => mem,
             _ => anyhow::bail!("Cannot get memory"),
@@ -162,30 +191,34 @@ impl Write<Vec<u8>> for AnyPtr {
             // alloc with new size
             AnyPtr::alloc(value, env)
         }
+        */
     }
 
-    fn free(self, _env: &Env) -> anyhow::Result<()> {
-        todo!("Release the memory from this string")
+    fn free(self, _env: &Env, _store: &mut Store) -> anyhow::Result<()> {
+        todo!("Release the memory from this any")
     }
 }
 
-fn write_buffer(offset: u32, value: &[u8], env: &Env) -> anyhow::Result<()> {
-    let view = match env.memory.get_ref() {
-        Some(mem) => mem.view::<u8>(),
-        _ => anyhow::bail!("Uninitialized memory"),
-    };
-    // We count in 32 so we have to devide by 2
-    let from = usize::try_from(offset)?;
-    for (bytes, cell) in value.iter().zip(view[from..from + value.len()].iter()) {
-        cell.set(*bytes);
-    }
+fn write_buffer(
+    offset: u32,
+    value: &[u8],
+    _env: &Env,
+    memory: &Memory,
+    store: &Store,
+) -> anyhow::Result<()> {
+    let mem_view = memory.view(store);
+    let from = u64::from(offset);
+    mem_view.write(from, value)?;
     Ok(())
 }
 
-fn size(offset: u32, memory: &Memory) -> anyhow::Result<u32> {
+fn size(offset: u32, _memory: &Memory) -> anyhow::Result<u32> {
     if offset < 8 {
         anyhow::bail!("Wrong offset: less than 8")
     }
+    todo!()
+
+    /*
     // read -4 offset
     // https://www.assemblyscript.org/memory.html#internals
     if let Some(cell) = memory.view::<u32>().get(offset as usize / (32 / 8) - 1) {
@@ -193,36 +226,37 @@ fn size(offset: u32, memory: &Memory) -> anyhow::Result<u32> {
     } else {
         anyhow::bail!("Wrong offset: can't read size")
     }
+    */
 }
 
-fn ptr_id(offset: u32, memory: &Memory) -> anyhow::Result<u32> {
+fn ptr_id(ptr: &AnyPtr, memory: &Memory, store: &Store) -> anyhow::Result<u32> {
+    // TODO: check offset again
+    /*
     if offset < 8 {
         anyhow::bail!("Wrong offset: less than 8")
     }
-    // read -8 offset
-    // https://www.assemblyscript.org/memory.html#internals
-    if let Some(cell) = memory.view::<u32>().get(offset as usize / (32 / 8) - 2) {
-        Ok(cell.get())
-    } else {
-        anyhow::bail!("Wrong offset: can't read type")
-    }
+    */
+
+    // From https://www.assemblyscript.org/runtime.html#memory-layout
+    // @ -8 (type: u32): unique id of the concrete class
+    let memory_view = memory.view(&store);
+    let ptr = ptr.0.sub_offset(8)?;
+    let slice_len_buf = ptr
+        .slice(&memory_view, mem::size_of::<u32>() as u32)?
+        .read_to_vec()?;
+    Ok(u32::from_ne_bytes(slice_len_buf.try_into().map_err(
+        |v| anyhow::Error::msg(format!("Unable to convert vec: {:?} to &[u8; 4]", v)),
+    )?))
 }
 
-fn set_id(offset: u32, id: u32, env: &Env) -> anyhow::Result<()> {
+fn set_id(offset: u32, id: u32, _env: &Env, memory: &Memory, store: &Store) -> anyhow::Result<()> {
     if offset < 8 {
         anyhow::bail!("Wrong offset: less than 8")
     }
-    let memory = match env.memory.get_ref() {
-        Some(mem) => mem,
-        _ => anyhow::bail!("Uninitialized memory"),
-    };
-    // read -8 offset
-    // https://www.assemblyscript.org/memory.html#internals
-    if let Some(cell) = memory.view::<u32>().get((offset as usize / (32 / 8)) - 2) {
-        cell.set(id);
-    } else {
-        anyhow::bail!("Wrong offset: can't read type")
-    }
 
+    let mem_view = memory.view(store);
+    let from = u64::from(offset - 8);
+    let to_write = id.to_ne_bytes();
+    mem_view.write(from, &to_write[..])?;
     Ok(())
 }
