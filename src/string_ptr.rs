@@ -28,7 +28,7 @@ unsafe impl FromToNativeWasmType for StringPtr {
 }
 
 impl Read<String> for StringPtr {
-    fn read(&self, memory: &Memory, store: &Store) -> anyhow::Result<String> {
+    fn read(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<String> {
         let size = self.size(memory, store)?;
         let memory_view = memory.view(store);
         let wasm_slice_ = self.0.slice(&memory_view, size);
@@ -41,39 +41,11 @@ impl Read<String> for StringPtr {
         } else {
             anyhow::bail!("Wrong offset: can't read buf")
         }
-
-        /*
-        // we need size / 2 because assemblyscript counts bytes
-        // while deref considers u16 elements
-        if let Some(buf) = self.0.deref(memory, 0, size / 2) {
-            let input: Vec<u16> = buf.iter().map(|b| b.get()).collect();
-            Ok(String::from_utf16_lossy(&input))
-        } else {
-            anyhow::bail!("Wrong offset: can't read buf")
-        }
-        */
     }
 
-    fn read2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<String> {
-        // let store_ = store.as_store_ref();
-
-        let size = self.size2(memory, store)?;
-        let memory_view = memory.view(store);
-        let wasm_slice_ = self.0.slice(&memory_view, size);
-
-        if let Ok(wasm_slice) = wasm_slice_ {
-            let mut res: Vec<u16> = Vec::with_capacity(size as usize);
-            res.resize(size as usize, 0);
-            wasm_slice.read_slice(&mut res)?;
-            Ok(String::from_utf16_lossy(&res))
-        } else {
-            anyhow::bail!("Wrong offset: can't read buf")
-        }
-    }
-
-    fn size(&self, memory: &Memory, store: &Store) -> anyhow::Result<u32> {
-        // size(self.0.offset(), memory, store)
+    fn size(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
         let memory_view = memory.view(&store);
+        // TODO: can we cast to WasmPtr<u8> ?
         let ptr = self.0.sub_offset(2)?; // 2 * u16 = 32 bits
         let slice_len_buf_ = ptr.slice(&memory_view, 2)?.read_to_vec()?;
 
@@ -83,25 +55,9 @@ impl Read<String> for StringPtr {
             .flatten()
             .collect();
 
-        // TODO: no unwrap
-        let size = u32::from_ne_bytes(slice_len_buf.try_into().unwrap());
-        Ok(size / 2)
-    }
-
-    fn size2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
-        // size(self.0.offset(), memory, store)
-        let memory_view = memory.view(&store);
-        let ptr = self.0.sub_offset(2)?; // 2 * u16 = 32 bits
-        let slice_len_buf_ = ptr.slice(&memory_view, 2)?.read_to_vec()?;
-
-        let slice_len_buf: Vec<u8> = slice_len_buf_
-            .iter()
-            .map(|i| i.to_ne_bytes())
-            .flatten()
-            .collect();
-
-        // TODO: no unwrap
-        let size = u32::from_ne_bytes(slice_len_buf.try_into().unwrap());
+        let size = u32::from_ne_bytes(slice_len_buf.try_into().map_err(|v| {
+            anyhow::Error::msg(format!("Unable to convert vec: {:?} to &[u8; 4]", v))
+        })?);
         Ok(size / 2)
     }
 }

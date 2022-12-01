@@ -27,7 +27,7 @@ unsafe impl FromToNativeWasmType for BufferPtr {
 }
 
 impl Read<Vec<u8>> for BufferPtr {
-    fn read(&self, memory: &Memory, store: &Store) -> anyhow::Result<Vec<u8>> {
+    fn read(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<Vec<u8>> {
         let size = self.size(memory, store)?;
 
         let memory_view = memory.view(store);
@@ -43,20 +43,13 @@ impl Read<Vec<u8>> for BufferPtr {
         }
     }
 
-    fn read2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<Vec<u8>> {
-        todo!()
-    }
-
-    fn size(&self, memory: &Memory, store: &Store) -> anyhow::Result<u32> {
+    fn size(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
         let memory_view = memory.view(&store);
         let ptr = self.0.sub_offset(4)?;
         let slice_len_buf = ptr.slice(&memory_view, 4)?.read_to_vec()?;
-        // TODO: no unwrap
-        Ok(u32::from_ne_bytes(slice_len_buf.try_into().unwrap()))
-    }
-
-    fn size2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
-        todo!()
+        Ok(u32::from_ne_bytes(slice_len_buf.try_into().map_err(
+            |v| anyhow::Error::msg(format!("Unable to convert vec: {:?} to &[u8; 4]", v)),
+        )?))
     }
 }
 

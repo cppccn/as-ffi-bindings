@@ -11,10 +11,10 @@ pub fn abort(
 ) -> Result<(), wasmer::RuntimeError> {
     let memory = ctx.data().memory.as_ref().expect("mem??").clone();
     let message_ = message
-        .read2(&memory, &ctx)
+        .read(&memory, &ctx)
         .map_err(|e| wasmer::RuntimeError::new(e.to_string()))?;
     let filename_ = filename
-        .read2(&memory, &ctx)
+        .read(&memory, &ctx)
         .map_err(|e| wasmer::RuntimeError::new(e.to_string()))?;
     eprintln!("Error: {} at {}:{} col: {}", message_, filename_, line, col);
     Ok(())

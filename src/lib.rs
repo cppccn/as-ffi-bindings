@@ -87,9 +87,9 @@ pub trait Read<T> {
     /// let str_ptr = get_string.call()?;
     /// let string = str_ptr.read(memory)?;
     /// ```
-    fn read(&self, memory: &Memory, store: &Store) -> anyhow::Result<T>;
+    // fn read(&self, memory: &Memory, store: &Store) -> anyhow::Result<T>;
 
-    fn read2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<T>;
+    fn read(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<T>;
 
     /// Read the size as indicated in the [AssemblyScript object header](https://www.assemblyscript.org/memory.html#internals)
     ///
@@ -107,9 +107,9 @@ pub trait Read<T> {
     /// let str_ptr = get_string.call()?;
     /// let size: u32 = str_ptr.size(memory)?;
     /// ```
-    fn size(&self, memory: &Memory, store: &Store) -> anyhow::Result<u32>;
+    // fn size(&self, memory: &Memory, store: &Store) -> anyhow::Result<u32>;
 
-    fn size2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32>;
+    fn size(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32>;
 }
 
 pub trait Write<T> {
