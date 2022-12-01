@@ -3,7 +3,7 @@ use crate::tools::export_asr;
 use super::{Env, Memory, Read, Write};
 
 use std::convert::{TryFrom, TryInto};
-use wasmer::{FromToNativeWasmType, Store, Value, WasmPtr};
+use wasmer::{AsStoreRef, FromToNativeWasmType, Store, Value, WasmPtr};
 
 #[derive(Clone, Copy)]
 pub struct StringPtr(WasmPtr<u16>);
@@ -54,7 +54,41 @@ impl Read<String> for StringPtr {
         */
     }
 
+    fn read2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<String> {
+        // let store_ = store.as_store_ref();
+
+        let size = self.size2(memory, store)?;
+        let memory_view = memory.view(store);
+        let wasm_slice_ = self.0.slice(&memory_view, size);
+
+        if let Ok(wasm_slice) = wasm_slice_ {
+            let mut res: Vec<u16> = Vec::with_capacity(size as usize);
+            res.resize(size as usize, 0);
+            wasm_slice.read_slice(&mut res)?;
+            Ok(String::from_utf16_lossy(&res))
+        } else {
+            anyhow::bail!("Wrong offset: can't read buf")
+        }
+    }
+
     fn size(&self, memory: &Memory, store: &Store) -> anyhow::Result<u32> {
+        // size(self.0.offset(), memory, store)
+        let memory_view = memory.view(&store);
+        let ptr = self.0.sub_offset(2)?; // 2 * u16 = 32 bits
+        let slice_len_buf_ = ptr.slice(&memory_view, 2)?.read_to_vec()?;
+
+        let slice_len_buf: Vec<u8> = slice_len_buf_
+            .iter()
+            .map(|i| i.to_ne_bytes())
+            .flatten()
+            .collect();
+
+        // TODO: no unwrap
+        let size = u32::from_ne_bytes(slice_len_buf.try_into().unwrap());
+        Ok(size / 2)
+    }
+
+    fn size2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
         // size(self.0.offset(), memory, store)
         let memory_view = memory.view(&store);
         let ptr = self.0.sub_offset(2)?; // 2 * u16 = 32 bits
@@ -84,6 +118,7 @@ impl Write<String> for StringPtr {
 
         // TODO: why 1?
         // Call __new with parameter: size & class id
+        /*
         let offset = u32::try_from(
             match new
                 .call(store, &[Value::I32(size * 2), Value::I32(1)])?
@@ -96,11 +131,15 @@ impl Write<String> for StringPtr {
                 _ => anyhow::bail!("Failed to allocate"),
             },
         )?;
+        */
+        let offset = u32::try_from(new.call(store, size * 2, 1)?)?;
         write_str(offset, value, env, memory, store)?;
 
         // pin
         let pin = export_asr!(fn_pin, env);
-        pin.call(store, &[Value::I32(offset.try_into()?)])?;
+        // pin.call(store, &[Value::I32(offset.try_into()?)])?;
+        pin.call(store, offset.try_into()?)?;
+
         Ok(Box::new(StringPtr::new(offset)))
     }
 
@@ -113,8 +152,6 @@ impl Write<String> for StringPtr {
     ) -> anyhow::Result<Box<StringPtr>> {
         let prev_size = size(&self, memory, store)?;
         let new_size = u32::try_from(value.len())?;
-        println!("prev_size: {:?}", prev_size);
-        println!("new_size: {:?}", new_size);
 
         if prev_size == new_size {
             write_str(self.offset(), value, env, memory, store)?;
@@ -122,11 +159,12 @@ impl Write<String> for StringPtr {
         } else {
             // unpin old ptr
             let unpin = export_asr!(fn_unpin, env);
-            unpin.call(store, &[Value::I32(self.offset().try_into()?)])?;
+            // unpin.call(store, &[Value::I32(self.offset().try_into()?)])?;
+            unpin.call(store, self.offset().try_into()?)?;
 
             // collect (e.g. perform full gc collection)
             let collect = export_asr!(fn_collect, env);
-            collect.call(store, &[])?;
+            collect.call(store)?;
 
             // alloc with new size
             StringPtr::alloc(value, env, memory, store)

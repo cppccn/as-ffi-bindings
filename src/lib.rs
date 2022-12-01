@@ -62,12 +62,12 @@ mod tools;
 //pub use any_ptr::AnyPtrExported;
 //pub use any_ptr::Type;
 pub use buffer_ptr::BufferPtr;
-pub use env::{Env, Env0};
+pub use env::Env;
 pub use string_ptr::StringPtr;
 pub use tools::abort;
 
 use std::fmt;
-use wasmer::{Memory, Store};
+use wasmer::{AsStoreRef, Memory, Store};
 
 pub trait Read<T> {
     /// Read the value contained in the given memory at the current pointer
@@ -88,6 +88,9 @@ pub trait Read<T> {
     /// let string = str_ptr.read(memory)?;
     /// ```
     fn read(&self, memory: &Memory, store: &Store) -> anyhow::Result<T>;
+
+    fn read2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<T>;
+
     /// Read the size as indicated in the [AssemblyScript object header](https://www.assemblyscript.org/memory.html#internals)
     ///
     /// # Return
@@ -105,6 +108,8 @@ pub trait Read<T> {
     /// let size: u32 = str_ptr.size(memory)?;
     /// ```
     fn size(&self, memory: &Memory, store: &Store) -> anyhow::Result<u32>;
+
+    fn size2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32>;
 }
 
 pub trait Write<T> {

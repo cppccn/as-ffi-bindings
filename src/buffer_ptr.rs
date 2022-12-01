@@ -1,6 +1,6 @@
 use super::{Env, Memory, Read, Write};
 use std::convert::{TryFrom, TryInto};
-use wasmer::{FromToNativeWasmType, Store, Value, WasmPtr};
+use wasmer::{AsStoreRef, FromToNativeWasmType, Store, Value, WasmPtr};
 
 use crate::tools::export_asr;
 
@@ -43,12 +43,20 @@ impl Read<Vec<u8>> for BufferPtr {
         }
     }
 
+    fn read2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<Vec<u8>> {
+        todo!()
+    }
+
     fn size(&self, memory: &Memory, store: &Store) -> anyhow::Result<u32> {
         let memory_view = memory.view(&store);
         let ptr = self.0.sub_offset(4)?;
         let slice_len_buf = ptr.slice(&memory_view, 4)?.read_to_vec()?;
         // TODO: no unwrap
         Ok(u32::from_ne_bytes(slice_len_buf.try_into().unwrap()))
+    }
+
+    fn size2(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
+        todo!()
     }
 }
 
@@ -64,16 +72,19 @@ impl Write<Vec<u8>> for BufferPtr {
 
         // Call __new with parameters (size & class id)
         // TODO: class id 0 is for Object but why?
-        let offset = u32::try_from(
-            if let Some(value) = new.call(store, &[Value::I32(size), Value::I32(0)])?.get(0) {
-                match value.i32() {
-                    Some(offset) => offset,
-                    _ => anyhow::bail!("Unable to allocate value"),
-                }
-            } else {
-                anyhow::bail!("Unable to allocate value")
-            },
-        )?;
+        /*
+        let offset = u32::try_from(if let Some(value) = new.call(store, size, 0)? {
+            match value.i32() {
+                Some(offset) => offset,
+                _ => anyhow::bail!("Unable to allocate value"),
+            }
+        } else {
+            anyhow::bail!("Unable to allocate value")
+        })?;
+        */
+
+        let offset = u32::try_from(new.call(store, size, 0)?)?;
+
         write_buffer(offset, value, env, memory, store)?;
         Ok(Box::new(BufferPtr::new(offset)))
     }
