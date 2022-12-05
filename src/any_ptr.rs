@@ -2,7 +2,7 @@ use super::{Env, Memory, Read, Write};
 use crate::{BufferPtr, StringPtr};
 use std::convert::{TryFrom, TryInto};
 use std::mem;
-use wasmer::{AsStoreRef, FromToNativeWasmType, Store, WasmPtr};
+use wasmer::{AsStoreMut, AsStoreRef, FromToNativeWasmType, Store, WasmPtr};
 
 use crate::tools::export_asr;
 
@@ -152,7 +152,7 @@ impl Write<Vec<u8>> for AnyPtr {
         value: &Vec<u8>,
         env: &Env,
         memory: &Memory,
-        store: &mut Store,
+        store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<AnyPtr>> {
         let new = export_asr!(fn_new, env);
         let size = i32::try_from(value.len())?;
@@ -166,7 +166,7 @@ impl Write<Vec<u8>> for AnyPtr {
         _value: &Vec<u8>,
         _env: &Env,
         _memory: &Memory,
-        _store: &mut Store,
+        _store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<Self>> {
         todo!()
         /*
@@ -204,7 +204,7 @@ fn write_buffer(
     value: &[u8],
     _env: &Env,
     memory: &Memory,
-    store: &Store,
+    store: &mut impl AsStoreMut,
 ) -> anyhow::Result<()> {
     let mem_view = memory.view(store);
     let from = u64::from(offset);

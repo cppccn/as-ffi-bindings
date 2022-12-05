@@ -3,7 +3,7 @@ use crate::tools::export_asr;
 use super::{Env, Memory, Read, Write};
 
 use std::convert::{TryFrom, TryInto};
-use wasmer::{AsStoreRef, FromToNativeWasmType, Store, WasmPtr};
+use wasmer::{AsStoreMut, AsStoreRef, FromToNativeWasmType, Store, WasmPtr};
 
 #[derive(Clone, Copy)]
 pub struct StringPtr(WasmPtr<u16>);
@@ -67,7 +67,7 @@ impl Write<String> for StringPtr {
         value: &String,
         env: &Env,
         memory: &Memory,
-        store: &mut Store,
+        store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<StringPtr>> {
         let new = export_asr!(fn_new, env);
         let size = i32::try_from(value.len())?;
@@ -104,7 +104,7 @@ impl Write<String> for StringPtr {
         value: &String,
         env: &Env,
         memory: &Memory,
-        store: &mut Store,
+        store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<StringPtr>> {
         let prev_size = size(&self, memory, store)?;
         let new_size = u32::try_from(value.len())?;
@@ -147,7 +147,7 @@ fn write_str(
     value: &str,
     _env: &Env,
     memory: &Memory,
-    store: &mut Store,
+    store: &mut impl AsStoreMut,
 ) -> anyhow::Result<()> {
     // let mem_view = env.memory.view(store);
     let mem_view = memory.view(store);
@@ -167,7 +167,7 @@ fn write_str(
     Ok(())
 }
 
-fn size(string_ptr: &StringPtr, memory: &Memory, store: &Store) -> anyhow::Result<u32> {
+fn size(string_ptr: &StringPtr, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
     let memory_view = memory.view(&store);
     let ptr = string_ptr.0.sub_offset(2)?; // 2 * u16 = 32 bits
     let slice_len_buf_ = ptr.slice(&memory_view, 2)?.read_to_vec()?;

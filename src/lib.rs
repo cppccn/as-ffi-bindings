@@ -67,7 +67,7 @@ pub use string_ptr::StringPtr;
 pub use tools::abort;
 
 use std::fmt;
-use wasmer::{AsStoreRef, Memory, Store};
+use wasmer::{AsStoreMut, AsStoreRef, Memory, Store};
 
 pub trait Read<T> {
     /// Read the value contained in the given memory at the current pointer
@@ -129,8 +129,12 @@ pub trait Write<T> {
     /// env.init(&instance)?;
     /// let str_ptr = StringPtr::alloc(&"hello return".to_string(), &env)?;
     /// ```
-    fn alloc(value: &T, env: &Env, memory: &Memory, store: &mut Store)
-        -> anyhow::Result<Box<Self>>;
+    fn alloc(
+        value: &T,
+        env: &Env,
+        memory: &Memory,
+        store: &mut impl AsStoreMut,
+    ) -> anyhow::Result<Box<Self>>;
     /// Try to write in the given environment a value. If the size is
     /// different, we procede to free the previous string and realloc a new
     /// pointer.
@@ -155,7 +159,7 @@ pub trait Write<T> {
         value: &T,
         env: &Env,
         memory: &Memory,
-        store: &mut Store,
+        store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<Self>>;
     /// Unpin the pointer
     fn free(self, env: &Env, store: &mut Store) -> anyhow::Result<()>;
