@@ -71,7 +71,6 @@ fn read_alloc_strings() -> Result<(), Box<dyn Error>> {
     };
 
     let instance = Instance::new(&mut store, &module, &import_object)?;
-    // let memory = instance.exports.get_memory("memory").expect("get memory");
 
     let mut env = Env::default();
     let memory = instance.exports.get_memory("memory")?;
@@ -88,6 +87,7 @@ fn read_alloc_strings() -> Result<(), Box<dyn Error>> {
         .get_typed_function::<(), StringPtr>(&store, "getString")?;
 
     // FIXME: should we remove this as we already have a test for string read?
+    //        A good TU would: Take an allocated string, uppercase it in SC; then we read it and compare it
     let str_ptr = get_string.call(&mut store)?;
     let string = str_ptr.read(memory, &store)?;
     assert_eq!(string, "hello test");
@@ -147,7 +147,6 @@ fn read_write_strings() -> Result<(), Box<dyn Error>> {
     let string = str_ptr.read(memory, &store)?;
     assert_eq!(string, "hello test");
 
-    // FIXME / TODO: https://github.com/massalabs/as-ffi-bindings/issues/7
     str_ptr.write(&"hallo tast".to_string(), &env, memory, &mut store)?;
     let str_ptr_2 = get_string.call(&mut store)?;
     let string = str_ptr_2.read(memory, &store)?;
@@ -161,7 +160,10 @@ fn read_buffers() -> Result<(), Box<dyn Error>> {
     // Test
     // Read a buffer defined in a wasm function (StaticArray<u8> in AssemblyScript code)
 
-    let wasm_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/buffer.wasm"));
+    let wasm_bytes = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/get_buffer.wasm"
+    ));
     let mut store = Store::default();
     let module = Module::new(&store, wasm_bytes)?;
 
@@ -182,7 +184,6 @@ fn read_buffers() -> Result<(), Box<dyn Error>> {
     let instance = Instance::new(&mut store, &module, &import_object)?;
     let memory = instance.exports.get_memory("memory").expect("get memory");
 
-    // TODO: test with odd size?
     let get_buf = instance
         .exports
         .get_typed_function::<(), BufferPtr>(&store, "get_buffer")?;
@@ -190,6 +191,15 @@ fn read_buffers() -> Result<(), Box<dyn Error>> {
     let buf_ptr = get_buf.call(&mut store)?;
     let vec = buf_ptr.read(memory, &store)?;
     let expected: Vec<u8> = vec![0x01, 0x03, 0x03, 0xFF];
+    assert_eq!(vec, expected);
+
+    let get_buf = instance
+        .exports
+        .get_typed_function::<(), BufferPtr>(&store, "get_buffer_2")?;
+
+    let buf_ptr = get_buf.call(&mut store)?;
+    let vec = buf_ptr.read(memory, &store)?;
+    let expected: Vec<u8> = vec![0x01, 0x03, 0x03, 0xFE, 0xFF];
     assert_eq!(vec, expected);
 
     Ok(())
@@ -222,7 +232,6 @@ fn alloc_buffer() -> Result<(), Box<dyn Error>> {
     };
 
     let instance = Instance::new(&mut store, &module, &import_object)?;
-    // let memory = instance.exports.get_memory("memory").expect("get memory");
 
     let mut env = Env::default();
     let memory = instance.exports.get_memory("memory")?;
@@ -241,7 +250,6 @@ fn alloc_buffer() -> Result<(), Box<dyn Error>> {
     sort_buffer.call(&mut store, buffer_ptr.offset() as i32)?;
     let sorted = buffer_ptr.read(memory, &store)?;
 
-    // let expected: Vec<u8> = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x08];
     input.sort();
     assert_eq!(sorted, input);
 
@@ -261,9 +269,6 @@ fn test_abort() -> Result<(), Box<dyn Error>> {
     let wasm_bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/abort.wasm"));
     let mut store = Store::default();
     let module = Module::new(&store, wasm_bytes)?;
-
-    // let host_function_signature =
-    //     FunctionType::new(vec![Type::I32, Type::I32, Type::I32, Type::I32], vec![]);
 
     let env = Env::default();
     let fenv = FunctionEnv::new(&mut store, env);
@@ -306,14 +311,8 @@ fn test_abort() -> Result<(), Box<dyn Error>> {
         .exports
         .get_typed_function::<(), ()>(&store, "to_abort")?;
 
-    // println!("__new_f: {:?}", __new_f);
-
-    // TODO: find a way to check abort is really called
-    abort.call(&mut store).expect("Could not call abort"); // call abort(...)
-
-    // let string_ptr0 = StringPtr::new(1056);
-    // let res_str = string_ptr0.read(memory, &store);
-    // println!("res: {:?} {:?}", res, res_str);
+    // TODO: find a way to check if abort is really called
+    abort.call(&mut store).expect("Could not call abort");
 
     Ok(())
 }
@@ -403,7 +402,6 @@ fn read_write_any() -> Result<(), Box<dyn Error>> {
         };
         let module = Module::new(&store, wasm_bytes)?;
         let instance = Instance::new(&mut store, &module, &import_object)?;
-        // instance.exports.get_memory("memory").expect("get memory");
 
         let mut env = Env::default();
         let memory = instance.exports.get_memory("memory")?;

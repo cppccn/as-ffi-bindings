@@ -34,8 +34,7 @@ impl Read<Vec<u8>> for BufferPtr {
         let wasm_slice_ = self.0.slice(&memory_view, size);
 
         if let Ok(wasm_slice) = wasm_slice_ {
-            let mut res = Vec::with_capacity(size as usize);
-            res.resize(size as usize, 0);
+            let mut res = vec![0; size as usize];
             wasm_slice.read_slice(&mut res)?;
             Ok(res)
         } else {

@@ -67,7 +67,7 @@ impl AnyPtr {
     }
     pub fn export(&self, memory: &Memory, store: &Store) -> anyhow::Result<AnyPtrExported> {
         let content = self.read(memory, store)?;
-        let id = ptr_id(&self, memory, store)?;
+        let id = ptr_id(self, memory, store)?;
         Ok(AnyPtrExported { content, id })
     }
     /// Create a new pointer with an allocation and write the pointer that

@@ -34,8 +34,7 @@ impl Read<String> for StringPtr {
         let wasm_slice_ = self.0.slice(&memory_view, size);
 
         if let Ok(wasm_slice) = wasm_slice_ {
-            let mut res: Vec<u16> = Vec::with_capacity(size as usize);
-            res.resize(size as usize, 0);
+            let mut res = vec![0; size as usize];
             wasm_slice.read_slice(&mut res)?;
             Ok(String::from_utf16_lossy(&res))
         } else {
@@ -51,8 +50,7 @@ impl Read<String> for StringPtr {
 
         let slice_len_buf: Vec<u8> = slice_len_buf_
             .iter()
-            .map(|i| i.to_ne_bytes())
-            .flatten()
+            .flat_map(|i| i.to_ne_bytes())
             .collect();
 
         let size = u32::from_ne_bytes(slice_len_buf.try_into().map_err(|v| {
@@ -106,7 +104,7 @@ impl Write<String> for StringPtr {
         memory: &Memory,
         store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<StringPtr>> {
-        let prev_size = size(&self, memory, store)?;
+        let prev_size = size(self, memory, store)?;
         let new_size = u32::try_from(value.len())?;
 
         if prev_size == new_size {
@@ -154,8 +152,7 @@ fn write_str(
 
     let value_encoded: Vec<u8> = value
         .encode_utf16()
-        .map(|item| item.to_ne_bytes())
-        .flatten()
+        .flat_map(|item| item.to_ne_bytes())
         .collect();
 
     // TODO: improve this msg
@@ -174,8 +171,7 @@ fn size(string_ptr: &StringPtr, memory: &Memory, store: &impl AsStoreRef) -> any
 
     let slice_len_buf: Vec<u8> = slice_len_buf_
         .iter()
-        .map(|i| i.to_ne_bytes())
-        .flatten()
+        .flat_map(|i| i.to_ne_bytes())
         .collect();
 
     // TODO: no unwrap
