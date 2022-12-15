@@ -1,5 +1,6 @@
 use super::{Env, Memory, Read, Write};
 use std::convert::{TryFrom, TryInto};
+use std::mem::size_of;
 use wasmer::{AsStoreMut, AsStoreRef, FromToNativeWasmType, Store, WasmPtr};
 
 use crate::tools::export_asr;
@@ -44,8 +45,9 @@ impl Read<Vec<u8>> for BufferPtr {
 
     fn size(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
         let memory_view = memory.view(&store);
-        let ptr = self.0.sub_offset(4)?;
-        let slice_len_buf = ptr.slice(&memory_view, 4)?.read_to_vec()?;
+        let u32_size = size_of::<u32>() as u32;
+        let ptr = self.0.sub_offset(u32_size)?;
+        let slice_len_buf = ptr.slice(&memory_view, u32_size)?.read_to_vec()?;
         Ok(u32::from_ne_bytes(slice_len_buf.try_into().map_err(
             |v| anyhow::Error::msg(format!("Unable to convert vec: {:?} to &[u8; 4]", v)),
         )?))

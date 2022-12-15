@@ -70,22 +70,7 @@ impl Write<String> for StringPtr {
         let new = export_asr!(fn_new, env);
         let size = i32::try_from(value.len())?;
 
-        // TODO: why 1?
-        // Call __new with parameter: size & class id
-        /*
-        let offset = u32::try_from(
-            match new
-                .call(store, &[Value::I32(size * 2), Value::I32(1)])?
-                .get(0)
-            {
-                Some(val) => match val.i32() {
-                    Some(i) => i,
-                    _ => anyhow::bail!("Failed to allocate"),
-                },
-                _ => anyhow::bail!("Failed to allocate"),
-            },
-        )?;
-        */
+        // class id: 1
         let offset = u32::try_from(new.call(store, size * 2, 1)?)?;
         write_str(offset, value, env, memory, store)?;
 
