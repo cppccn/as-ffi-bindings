@@ -1,4 +1,4 @@
-use crate::tools::export_asr;
+use crate::tools::{export_asr, export_mem};
 
 use super::{Env, Memory, Read, Write};
 
@@ -19,11 +19,11 @@ impl StringPtr {
 
 unsafe impl FromToNativeWasmType for StringPtr {
     type Native = i32;
-    fn to_native(self) -> Self::Native {
-        self.offset() as i32
-    }
     fn from_native(n: Self::Native) -> Self {
         Self::new(n as u32)
+    }
+    fn to_native(self) -> Self::Native {
+        self.offset() as i32
     }
 }
 
@@ -43,6 +43,9 @@ impl Read<String> for StringPtr {
     }
 
     fn size(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
+        size(self, memory, store)
+
+        /*
         let memory_view = memory.view(&store);
         // TODO: can we cast to WasmPtr<u8> ?
         let ptr = self.0.sub_offset(2)?; // 2 * u16 = 32 bits
@@ -57,6 +60,7 @@ impl Read<String> for StringPtr {
             anyhow::Error::msg(format!("Unable to convert vec: {:?} to &[u8; 4]", v))
         })?);
         Ok(size / 2)
+        */
     }
 }
 
@@ -84,9 +88,9 @@ impl Write<String> for StringPtr {
         &mut self,
         value: &String,
         env: &Env,
-        memory: &Memory,
         store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<StringPtr>> {
+        let memory = export_mem!(env);
         let prev_size = size(self, memory, store)?;
         let new_size = u32::try_from(value.len())?;
 
@@ -96,7 +100,6 @@ impl Write<String> for StringPtr {
         } else {
             // unpin old ptr
             let unpin = export_asr!(fn_unpin, env);
-            // unpin.call(store, &[Value::I32(self.offset().try_into()?)])?;
             unpin.call(store, self.offset().try_into()?)?;
 
             // collect (e.g. perform full gc collection)
@@ -129,25 +132,20 @@ fn write_str(
     env: &Env,
     store: &mut impl AsStoreMut,
 ) -> anyhow::Result<()> {
-    let memory = match env.memory.as_ref() {
-        Some(mem) => mem,
-        _ => anyhow::bail!("No Memory in env"),
-    };
+    let memory = export_mem!(env);
     let mem_view = memory.view(store);
-
     let value_encoded: Vec<u8> = value
         .encode_utf16()
         .flat_map(|item| item.to_ne_bytes())
         .collect();
-
     let from = u64::from(offset);
     mem_view.write(from, &value_encoded[..])?;
-
     Ok(())
 }
 
 fn size(string_ptr: &StringPtr, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
     let memory_view = memory.view(&store);
+    // We need to offset: -32 bits, as ptr is WasmPtr<u16> we specify only an offset of 2
     let ptr = string_ptr.0.sub_offset(2)?; // 2 * u16 = 32 bits
     let slice_len_buf_ = ptr.slice(&memory_view, 2)?.read_to_vec()?;
 

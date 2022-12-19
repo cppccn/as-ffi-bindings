@@ -147,7 +147,7 @@ fn read_write_strings() -> Result<(), Box<dyn Error>> {
     let string = str_ptr.read(memory, &store)?;
     assert_eq!(string, "hello test");
 
-    str_ptr.write(&"hallo tast".to_string(), &env, memory, &mut store)?;
+    str_ptr.write(&"hallo tast".to_string(), &env, &mut store)?;
     let str_ptr_2 = get_string.call(&mut store)?;
     let string = str_ptr_2.read(memory, &store)?;
     assert_eq!(string, "hallo tast");

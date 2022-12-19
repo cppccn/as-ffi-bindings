@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use std::mem::size_of;
 use wasmer::{AsStoreMut, AsStoreRef, FromToNativeWasmType, Store, WasmPtr};
 
-use crate::tools::export_asr;
+use crate::tools::{export_asr, export_mem};
 
 #[derive(Clone, Copy)]
 pub struct BufferPtr(WasmPtr<u8>);
@@ -30,10 +30,8 @@ unsafe impl FromToNativeWasmType for BufferPtr {
 impl Read<Vec<u8>> for BufferPtr {
     fn read(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<Vec<u8>> {
         let size = self.size(memory, store)?;
-
         let memory_view = memory.view(store);
         let wasm_slice_ = self.0.slice(&memory_view, size);
-
         if let Ok(wasm_slice) = wasm_slice_ {
             let mut res = vec![0; size as usize];
             wasm_slice.read_slice(&mut res)?;
@@ -74,7 +72,6 @@ impl Write<Vec<u8>> for BufferPtr {
         &mut self,
         _value: &Vec<u8>,
         _env: &Env,
-        _memory: &Memory,
         _store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<Self>> {
         todo!()
@@ -113,13 +110,9 @@ fn write_buffer(
     offset: u32,
     value: &[u8],
     env: &Env,
-    // memory: &Memory,
     store: &mut impl AsStoreMut,
 ) -> anyhow::Result<()> {
-    let memory = match env.memory.as_ref() {
-        Some(mem) => mem,
-        _ => anyhow::bail!("No Memory in env"),
-    };
+    let memory = export_mem!(env);
     let mem_view = memory.view(store);
     let from = u64::from(offset);
     mem_view.write(from, value)?;

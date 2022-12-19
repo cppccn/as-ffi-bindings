@@ -153,7 +153,6 @@ pub trait Write<T> {
         &mut self,
         value: &T,
         env: &Env,
-        memory: &Memory,
         store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<Self>>;
     /// Unpin the pointer

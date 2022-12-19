@@ -24,9 +24,19 @@ macro_rules! export_asr {
     ($func_name:ident, $env:expr) => {
         match $env.$func_name.as_ref() {
             Some(res) => res,
-            _ => anyhow::bail!("Failed to get func"),
+            _ => anyhow::bail!("Failed to get func in env"),
+        }
+    };
+}
+
+macro_rules! export_mem {
+    ($env:expr) => {
+        match $env.memory.as_ref() {
+            Some(res) => res,
+            _ => anyhow::bail!("No memory in env"),
         }
     };
 }
 
 pub(crate) use export_asr;
+pub(crate) use export_mem;

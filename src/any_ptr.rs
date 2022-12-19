@@ -122,10 +122,8 @@ unsafe impl FromToNativeWasmType for AnyPtr {
 impl Read<Vec<u8>> for AnyPtr {
     fn read(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<Vec<u8>> {
         let size = self.size(memory, store)?;
-
         let memory_view = memory.view(store);
         let wasm_slice_ = self.0.slice(&memory_view, size);
-
         if let Ok(wasm_slice) = wasm_slice_ {
             let mut res = Vec::with_capacity(size as usize * 2);
             res.resize(size as usize, 0);
@@ -137,13 +135,7 @@ impl Read<Vec<u8>> for AnyPtr {
     }
 
     fn size(&self, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
-        let memory_view = memory.view(&store);
-        let u32_size = size_of::<u32>() as u32;
-        let ptr = self.0.sub_offset(u32_size)?;
-        let slice_len_buf = ptr.slice(&memory_view, u32_size)?.read_to_vec()?;
-        Ok(u32::from_ne_bytes(slice_len_buf.try_into().map_err(
-            |v| anyhow::Error::msg(format!("Unable to convert vec: {:?} to &[u8; 4]", v)),
-        )?))
+        size(self, memory, store)
     }
 }
 
@@ -164,7 +156,6 @@ impl Write<Vec<u8>> for AnyPtr {
         &mut self,
         _value: &Vec<u8>,
         _env: &Env,
-        _memory: &Memory,
         _store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<Self>> {
         todo!()
@@ -214,21 +205,14 @@ fn write_buffer(
     Ok(())
 }
 
-fn size(offset: u32, _memory: &Memory) -> anyhow::Result<u32> {
-    if offset < 8 {
-        anyhow::bail!("Wrong offset: less than 8")
-    }
-    todo!()
-
-    /*
-    // read -4 offset
-    // https://www.assemblyscript.org/memory.html#internals
-    if let Some(cell) = memory.view::<u32>().get(offset as usize / (32 / 8) - 1) {
-        Ok(cell.get() / 2)
-    } else {
-        anyhow::bail!("Wrong offset: can't read size")
-    }
-    */
+fn size(ptr: &AnyPtr, memory: &Memory, store: &impl AsStoreRef) -> anyhow::Result<u32> {
+    let memory_view = memory.view(&store);
+    let u32_size = size_of::<u32>() as u32;
+    let ptr = ptr.0.sub_offset(u32_size)?;
+    let slice_len_buf = ptr.slice(&memory_view, u32_size)?.read_to_vec()?;
+    Ok(u32::from_ne_bytes(slice_len_buf.try_into().map_err(
+        |v| anyhow::Error::msg(format!("Unable to convert vec: {:?} to &[u8; 4]", v)),
+    )?))
 }
 
 fn ptr_id(ptr: &AnyPtr, memory: &Memory, store: &Store) -> anyhow::Result<u32> {
