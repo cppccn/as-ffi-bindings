@@ -154,7 +154,9 @@ fn size(string_ptr: &StringPtr, memory: &Memory, store: &impl AsStoreRef) -> any
         .flat_map(|i| i.to_ne_bytes())
         .collect();
 
-    // TODO: no unwrap
-    let size = u32::from_ne_bytes(slice_len_buf.try_into().unwrap());
+    let size =
+        u32::from_ne_bytes(slice_len_buf.try_into().map_err(|v| {
+            anyhow::Error::msg(format!("Unable to convert vec: {:?} to &[u8; 4]", v))
+        })?);
     Ok(size / 2)
 }
