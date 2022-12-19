@@ -83,7 +83,6 @@ impl AnyPtr {
             Ok(Type::Buffer(BufferPtr::alloc(
                 &ptr_exported.content,
                 env,
-                memory,
                 store,
             )?))
         } else if ptr_exported.id == 1 {
@@ -99,12 +98,11 @@ impl AnyPtr {
             Ok(Type::String(StringPtr::alloc(
                 &String::from_utf16_lossy(&utf16_vec),
                 env,
-                memory,
                 store,
             )?))
         } else {
             // todo write type anyway
-            let ptr = AnyPtr::alloc(&ptr_exported.content, env, memory, store)?;
+            let ptr = AnyPtr::alloc(&ptr_exported.content, env, store)?;
             set_id(ptr.offset(), ptr_exported.id, env, memory, store)?;
             Ok(Type::Any(ptr))
         }
@@ -153,13 +151,12 @@ impl Write<Vec<u8>> for AnyPtr {
     fn alloc(
         value: &Vec<u8>,
         env: &Env,
-        memory: &Memory,
         store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<AnyPtr>> {
         let new = export_asr!(fn_new, env);
         let size = i32::try_from(value.len())?;
         let offset = u32::try_from(new.call(store, size, 0)?)?;
-        write_buffer(offset, value, env, memory, store)?;
+        write_buffer(offset, value, env, store)?;
         Ok(Box::new(AnyPtr::new(offset)))
     }
 
@@ -204,10 +201,13 @@ impl Write<Vec<u8>> for AnyPtr {
 fn write_buffer(
     offset: u32,
     value: &[u8],
-    _env: &Env,
-    memory: &Memory,
+    env: &Env,
     store: &mut impl AsStoreMut,
 ) -> anyhow::Result<()> {
+    let memory = match env.memory.as_ref() {
+        Some(mem) => mem,
+        _ => anyhow::bail!("No Memory in env"),
+    };
     let mem_view = memory.view(store);
     let from = u64::from(offset);
     mem_view.write(from, value)?;
@@ -232,17 +232,11 @@ fn size(offset: u32, _memory: &Memory) -> anyhow::Result<u32> {
 }
 
 fn ptr_id(ptr: &AnyPtr, memory: &Memory, store: &Store) -> anyhow::Result<u32> {
-    // TODO: check offset again
-    /*
-    if offset < 8 {
-        anyhow::bail!("Wrong offset: less than 8")
-    }
-    */
-
     // From https://www.assemblyscript.org/runtime.html#memory-layout
     // @ -8 (type: u32): unique id of the concrete class
     let memory_view = memory.view(&store);
-    let ptr = ptr.0.sub_offset(8)?;
+    let u32_size = size_of::<u32>() as u32;
+    let ptr = ptr.0.sub_offset(u32_size * 2)?;
     let slice_len_buf = ptr
         .slice(&memory_view, mem::size_of::<u32>() as u32)?
         .read_to_vec()?;
@@ -257,7 +251,8 @@ fn set_id(offset: u32, id: u32, _env: &Env, memory: &Memory, store: &Store) -> a
     }
 
     let mem_view = memory.view(store);
-    let from = u64::from(offset - 8);
+    let u32_size = size_of::<u32>() as u32;
+    let from = u64::from(offset - (u32_size * 2));
     let to_write = id.to_ne_bytes();
     mem_view.write(from, &to_write[..])?;
     Ok(())

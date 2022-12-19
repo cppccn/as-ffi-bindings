@@ -129,12 +129,7 @@ pub trait Write<T> {
     /// env.init(&instance)?;
     /// let str_ptr = StringPtr::alloc(&"hello return".to_string(), &env)?;
     /// ```
-    fn alloc(
-        value: &T,
-        env: &Env,
-        memory: &Memory,
-        store: &mut impl AsStoreMut,
-    ) -> anyhow::Result<Box<Self>>;
+    fn alloc(value: &T, env: &Env, store: &mut impl AsStoreMut) -> anyhow::Result<Box<Self>>;
     /// Try to write in the given environment a value. If the size is
     /// different, we procede to free the previous string and realloc a new
     /// pointer.

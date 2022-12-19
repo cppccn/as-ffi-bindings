@@ -94,7 +94,7 @@ fn read_alloc_strings() -> Result<(), Box<dyn Error>> {
 
     // alloc then read
     let to_alloc = String::from("hello return");
-    let str_ptr_2 = StringPtr::alloc(&to_alloc, &env, &memory, &mut store)?;
+    let str_ptr_2 = StringPtr::alloc(&to_alloc, &env, &mut store)?;
     let string = str_ptr_2.read(memory, &store)?;
     assert_eq!(string, to_alloc);
 
@@ -245,7 +245,7 @@ fn alloc_buffer() -> Result<(), Box<dyn Error>> {
         .get_typed_function::<i32, ()>(&store, "sortBuffer")?;
 
     let mut input: Vec<u8> = vec![0x03, 0x02, 0x08, 0x00, 0x04, 0x01, 0x05];
-    let buffer_ptr = BufferPtr::alloc(&input, &env, memory, &mut store)?;
+    let buffer_ptr = BufferPtr::alloc(&input, &env, &mut store)?;
 
     sort_buffer.call(&mut store, buffer_ptr.offset() as i32)?;
     let sorted = buffer_ptr.read(memory, &store)?;
@@ -255,7 +255,7 @@ fn alloc_buffer() -> Result<(), Box<dyn Error>> {
 
     // Now checking with odd size
     let input: Vec<u8> = vec![0x03, 0x02, 0x00, 0x01, 0x09];
-    let buffer_ptr = BufferPtr::alloc(&input, &env, memory, &mut store)?;
+    let buffer_ptr = BufferPtr::alloc(&input, &env, &mut store)?;
     assert_eq!(buffer_ptr.size(memory, &mut store)?, 5);
 
     Ok(())

@@ -58,28 +58,15 @@ impl Write<Vec<u8>> for BufferPtr {
     fn alloc(
         value: &Vec<u8>,
         env: &Env,
-        memory: &Memory,
         store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<BufferPtr>> {
         let new = export_asr!(fn_new, env);
         let size = i32::try_from(value.len())?;
 
-        // Call __new with parameters (size & class id)
-        // TODO: class id 0 is for Object but why?
-        /*
-        let offset = u32::try_from(if let Some(value) = new.call(store, size, 0)? {
-            match value.i32() {
-                Some(offset) => offset,
-                _ => anyhow::bail!("Unable to allocate value"),
-            }
-        } else {
-            anyhow::bail!("Unable to allocate value")
-        })?;
-        */
-
+        // Call __new with parameters (size & class id = 0)
         let offset = u32::try_from(new.call(store, size, 0)?)?;
 
-        write_buffer(offset, value, env, memory, store)?;
+        write_buffer(offset, value, env, store)?;
         Ok(Box::new(BufferPtr::new(offset)))
     }
 
@@ -125,28 +112,15 @@ impl Write<Vec<u8>> for BufferPtr {
 fn write_buffer(
     offset: u32,
     value: &[u8],
-    _env: &Env,
-    memory: &Memory,
+    env: &Env,
+    // memory: &Memory,
     store: &mut impl AsStoreMut,
 ) -> anyhow::Result<()> {
+    let memory = match env.memory.as_ref() {
+        Some(mem) => mem,
+        _ => anyhow::bail!("No Memory in env"),
+    };
     let mem_view = memory.view(store);
-
-    /*
-    if cfg!(feature = "no_thread") {
-        let subarray_view = view.subarray(offset, offset + (value.len() as u32));
-        // copy_from is unsafe because the caller will need to make sure there are no data races
-        // when copying memory into the view.
-        unsafe {
-            subarray_view.copy_from(value);
-        }
-    } else {
-        let from = usize::try_from(offset)?;
-        for (bytes, cell) in value.iter().zip(view[from..from + value.len()].iter()) {
-            cell.set(*bytes);
-        }
-    }
-    */
-
     let from = u64::from(offset);
     mem_view.write(from, value)?;
     Ok(())

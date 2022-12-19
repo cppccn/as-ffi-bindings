@@ -64,7 +64,6 @@ impl Write<String> for StringPtr {
     fn alloc(
         value: &String,
         env: &Env,
-        memory: &Memory,
         store: &mut impl AsStoreMut,
     ) -> anyhow::Result<Box<StringPtr>> {
         let new = export_asr!(fn_new, env);
@@ -72,11 +71,10 @@ impl Write<String> for StringPtr {
 
         // class id: 1
         let offset = u32::try_from(new.call(store, size * 2, 1)?)?;
-        write_str(offset, value, env, memory, store)?;
+        write_str(offset, value, env, store)?;
 
         // pin
         let pin = export_asr!(fn_pin, env);
-        // pin.call(store, &[Value::I32(offset.try_into()?)])?;
         pin.call(store, offset.try_into()?)?;
 
         Ok(Box::new(StringPtr::new(offset)))
@@ -93,7 +91,7 @@ impl Write<String> for StringPtr {
         let new_size = u32::try_from(value.len())?;
 
         if prev_size == new_size {
-            write_str(self.offset(), value, env, memory, store)?;
+            write_str(self.offset(), value, env, store)?;
             Ok(Box::new(*self))
         } else {
             // unpin old ptr
@@ -106,7 +104,7 @@ impl Write<String> for StringPtr {
             collect.call(store)?;
 
             // alloc with new size
-            StringPtr::alloc(value, env, memory, store)
+            StringPtr::alloc(value, env, store)
         }
     }
 
@@ -128,11 +126,13 @@ impl Write<String> for StringPtr {
 fn write_str(
     offset: u32,
     value: &str,
-    _env: &Env,
-    memory: &Memory,
+    env: &Env,
     store: &mut impl AsStoreMut,
 ) -> anyhow::Result<()> {
-    // let mem_view = env.memory.view(store);
+    let memory = match env.memory.as_ref() {
+        Some(mem) => mem,
+        _ => anyhow::bail!("No Memory in env"),
+    };
     let mem_view = memory.view(store);
 
     let value_encoded: Vec<u8> = value
@@ -140,9 +140,6 @@ fn write_str(
         .flat_map(|item| item.to_ne_bytes())
         .collect();
 
-    // TODO: improve this msg
-    // We count in 32 so we have to divide by 2
-    // let from = u64::from(offset) / 2;
     let from = u64::from(offset);
     mem_view.write(from, &value_encoded[..])?;
 
