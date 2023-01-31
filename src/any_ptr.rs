@@ -147,6 +147,8 @@ impl Write<Vec<u8>> for AnyPtr {
     ) -> anyhow::Result<Box<AnyPtr>> {
         let new = export_asr!(fn_new, env);
         let size = i32::try_from(value.len())?;
+
+        // class id = 0
         let offset = u32::try_from(new.call(store, size, 0)?)?;
         write_buffer(offset, value, env, store)?;
         Ok(Box::new(AnyPtr::new(offset)))

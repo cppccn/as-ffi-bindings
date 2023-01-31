@@ -73,8 +73,8 @@ impl Write<String> for StringPtr {
         let new = export_asr!(fn_new, env);
         let size = i32::try_from(value.len())?;
 
-        // class id: 1
-        let offset = u32::try_from(new.call(store, size * 2, 1)?)?;
+        // class id = 2
+        let offset = u32::try_from(new.call(store, size * 2, 2)?)?;
         write_str(offset, value, env, store)?;
 
         // pin
