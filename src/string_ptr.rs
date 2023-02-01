@@ -74,6 +74,7 @@ impl Write<String> for StringPtr {
         let size = i32::try_from(value.len())?;
 
         // class id = 2
+        // match AS `String` class id
         // see https://github.com/massalabs/massa-sc-runtime/blob/test-sc-using-as-25/src/tests/tests_runtime.rs#L314
         let offset = u32::try_from(new.call(store, size * 2, 2)?)?;
         write_str(offset, value, env, store)?;

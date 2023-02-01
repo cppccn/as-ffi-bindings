@@ -62,6 +62,7 @@ impl Write<Vec<u8>> for BufferPtr {
         let size = i32::try_from(value.len())?;
 
         // class id = 4
+        // match AS `StaticArray<T>` class id
         // see https://github.com/massalabs/massa-sc-runtime/blob/test-sc-using-as-25/src/tests/tests_runtime.rs#L314
         let offset = u32::try_from(new.call(store, size, 1)?)?;
 
