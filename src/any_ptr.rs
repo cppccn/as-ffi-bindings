@@ -7,7 +7,7 @@ use wasmer::{AsStoreMut, AsStoreRef, FromToNativeWasmType, Store, WasmPtr};
 
 use crate::tools::export_asr;
 
-// todo: should I implement Any ?
+// TODO: take a decision concerning `AnyPtr`
 #[derive(Clone, Copy)]
 pub struct AnyPtr(WasmPtr<u8>);
 pub struct AnyPtrExported {

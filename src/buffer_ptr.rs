@@ -61,7 +61,8 @@ impl Write<Vec<u8>> for BufferPtr {
         let new = export_asr!(fn_new, env);
         let size = i32::try_from(value.len())?;
 
-        // class id = 1
+        // class id = 4
+        // see https://github.com/massalabs/massa-sc-runtime/blob/test-sc-using-as-25/src/tests/tests_runtime.rs#L314
         let offset = u32::try_from(new.call(store, size, 1)?)?;
 
         write_buffer(offset, value, env, store)?;
