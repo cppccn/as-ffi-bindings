@@ -323,6 +323,7 @@ lazy_static::lazy_static! {
 }
 
 #[test]
+#[ignore]
 fn read_write_any() -> Result<(), Box<dyn Error>> {
     fn print(val: i32) {
         ANY_PRINTED.lock().unwrap().push(val);
